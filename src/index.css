@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-serif: "Shippori Mincho", "Playfair Display", Georgia, serif;
+    --font-sans: "Zen Kaku Gothic New", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: #23211D;
+    background-color: #EDE8DA;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, .font-serif-heading {
+    font-family: var(--font-serif);
+  }
+
+  .font-tabular {
+    font-feature-settings: "tnum" 1;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Ruled paper background pattern */
+.bg-ruled-paper {
+  background-color: #EDE8DA;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 27px,
+    rgba(35, 33, 29, 0.05) 28px,
+    rgba(35, 33, 29, 0.05) 28px
+  );
+  background-size: 100% 28px;
+}
+
+/* Faint grid paper background */
+.bg-grid-paper {
+  background-color: #EDE8DA;
+  background-image: 
+    linear-gradient(rgba(35, 33, 29, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(35, 33, 29, 0.035) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Notebook Spine left border effect */
+.notebook-spine {
+  position: relative;
+}
+
+.notebook-spine::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 20px;
+  width: 1px;
+  border-left: 1px dashed rgba(86, 82, 72, 0.25);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Custom scrollbar for notebook feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #EDE8DA;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D5CEBE;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9C9588;
+}
+
+/* Ink brush edge utility */
+.brush-edge {
+  box-shadow: inset 0 0 4px rgba(35, 33, 29, 0.1);
+}

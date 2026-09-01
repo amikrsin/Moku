@@ -1,0 +1,6 @@
+{
+  "name": "Kakeibo Ledger",
+  "description": "A mindful personal expense tracker based on Japan's Kakeibo household-budgeting method.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
