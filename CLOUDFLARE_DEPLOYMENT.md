@@ -1,50 +1,41 @@
-# Cloudflare Pages Deployment Guide for MOKU
+# Cloudflare Deployment Guide for Moku
 
-This project is configured and compiled for instant deployment on **Cloudflare Pages**.
+## 🛠️ Root Cause of the Cloudflare Build Failure in the Screenshot
 
----
+In your build screenshot:
+- **Build command**: `bun run build`
+- **Failure point**: **Installing (3s - Red ❌)**
 
-## 🚀 Quick Deployment Methods
-
-### Option 1: Direct Folder Upload (Easiest - 1 Minute)
-1. Log into your [Cloudflare Dashboard](https://dash.cloudflare.com/).
-2. Navigate to **Workers & Pages** > **Create application** > **Pages** > **Upload assets**.
-3. Set your Project Name (e.g. `moku-tracker`).
-4. Drag and drop the compiled **`dist`** folder directly into the upload box.
-5. Click **Deploy site**. Your app is immediately live with HTTPS and global CDN caching.
+### Why It Failed:
+1. **Missing / Incompatible Bun in Cloudflare CI**: The Cloudflare build container was attempting to run `bun install` because of a `bun.lock` file, but standard Cloudflare build environments run **Node.js + NPM** by default (or Bun was not installed/in PATH).
+2. **Workers Build vs Pages**: You are deploying via **Cloudflare Workers Builds** which executes `npx wrangler deploy`.
 
 ---
 
-### Option 2: Connect Git Repository (GitHub / GitLab)
-1. Push your repository to GitHub or GitLab.
-2. In Cloudflare Dashboard, go to **Workers & Pages** > **Create application** > **Pages** > **Connect to Git**.
-3. Select your repository.
-4. Set the build settings:
-   - **Framework preset**: `Vite`
-   - **Build command**: `npm run build`
-   - **Build output directory**: `dist`
-   - **Node.js version** (Environment variable): `NODE_VERSION = 20`
-5. Click **Save and Deploy**. Cloudflare will automatically build and deploy new updates on every push.
+## 🚀 How to Fix the Build in Cloudflare Dashboard (2 Easy Steps)
+
+### Step 1: Update the Build Settings in Cloudflare
+In your Cloudflare dashboard for project `Moku`:
+1. Go to **Settings** > **Build & Deployments** (or edit your build configuration).
+2. Change the settings to:
+   - **Build command**: `npm run build` (instead of `bun run build`)
+   - **Deploy command**: `npx wrangler deploy`
+   - **Root directory**: `/`
+   - **Node.js version / Environment Variable**: `NODE_VERSION = 20`
 
 ---
 
-### Option 3: Deploy via Wrangler CLI
-Run the following commands in your terminal:
-```bash
-# 1. Install Wrangler CLI (if not installed)
-npm install -g wrangler
-
-# 2. Build the latest distribution assets
-npm run build
-
-# 3. Deploy the dist directory to Cloudflare Pages
-wrangler pages deploy dist --project-name=moku-mindful-expense-tracker
-```
+### Step 2: What We Updated in the Repository
+1. **Added `package-lock.json`**: Generated official npm lockfile so Cloudflare's `npm install` runs smoothly without errors.
+2. **Removed `bun.lock`**: Ensures Cloudflare uses the standard, fully supported `npm` package manager.
+3. **Updated `wrangler.toml`**: Added support for Cloudflare Workers Static Assets (`[assets] directory = "./dist"` with `not_found_handling = "single-page-application"`) so `npx wrangler deploy` publishes your SPA directly to Cloudflare's global edge network.
 
 ---
 
-## 📁 Included Cloudflare Configuration Files
+## 🌐 Alternative: Cloudflare Pages (Direct Upload / Git)
 
-- **`wrangler.toml`**: Cloudflare configuration specifying project name, compatibility date, and build output directory (`dist`).
-- **`public/_redirects`**: Configured with `/*  /index.html  200` to support client-side Single Page Application (SPA) routing.
-- **`public/_headers`**: Configured with security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`) and asset cache policies.
+If you prefer Cloudflare Pages instead of Workers:
+- **Framework preset**: `Vite`
+- **Build command**: `npm run build`
+- **Build output directory**: `dist`
+- **Root directory**: `/`
