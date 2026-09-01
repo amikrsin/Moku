@@ -19,7 +19,11 @@ import {
   TrendingDown,
   Sparkles,
   Layers,
-  Clock
+  Clock,
+  X,
+  Shield,
+  BookOpen,
+  AlertCircle
 } from 'lucide-react';
 
 interface ExpenseFlowChartProps {
@@ -286,7 +290,7 @@ export const ExpenseFlowChart: React.FC<ExpenseFlowChartProps> = ({
   return (
     <div className="bg-[#E5DFCE]/80 border-2 border-[#565248]/30 rounded-xl p-4 sm:p-5 shadow-sm space-y-4 text-[#23211D]">
       {/* 1. Header Bar: Title, Range Switcher & View Modes */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-[#565248]/20 pb-3.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#565248]/20 pb-3.5">
         <div className="flex items-center space-x-2.5">
           <div className="w-8 h-8 rounded-lg bg-[#A8342A] text-[#EDE8DA] flex items-center justify-center shadow-xs">
             <Activity className="w-4 h-4" />
@@ -294,72 +298,71 @@ export const ExpenseFlowChart: React.FC<ExpenseFlowChartProps> = ({
           <div>
             <div className="flex items-center space-x-2">
               <h3 className="font-serif text-base sm:text-lg font-bold text-[#23211D] tracking-tight">
-                Expense Flow & DayBook Wave
+                Expense Flow & Daily Wave
               </h3>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-[#565248]/10 text-[#565248] uppercase tracking-wider">
-                支出フロー
+                Trend
               </span>
             </div>
             <p className="text-xs text-[#565248]">
-              Observe day-to-day spending rhythm and mindful zero-spend days
+              Observe day-to-day spending rhythm and zero-spend days
             </p>
           </div>
         </div>
 
-        {/* Navigation & Mode Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Week vs Month View Toggle */}
-          <div className="flex items-center bg-[#EDE8DA] border border-[#565248]/30 rounded-md p-0.5 text-xs font-serif font-semibold">
-            <button
-              id="expense-flow-week-view-btn"
-              onClick={() => setViewMode('week')}
-              className={`px-2.5 py-1 rounded-sm transition-all cursor-pointer ${
-                viewMode === 'week'
-                  ? 'bg-[#A8342A] text-[#EDE8DA] shadow-2xs'
-                  : 'text-[#565248] hover:text-[#23211D]'
-              }`}
-            >
-              7-Day Strip
-            </button>
-            <button
-              id="expense-flow-month-view-btn"
-              onClick={() => setViewMode('month')}
-              className={`px-2.5 py-1 rounded-sm transition-all cursor-pointer ${
-                viewMode === 'month'
-                  ? 'bg-[#A8342A] text-[#EDE8DA] shadow-2xs'
-                  : 'text-[#565248] hover:text-[#23211D]'
-              }`}
-            >
-              Full Month
-            </button>
-          </div>
-
-          {/* Week Paging Buttons (Only when week mode) */}
-          {viewMode === 'week' && (
-            <div className="flex items-center space-x-1 bg-[#EDE8DA] border border-[#565248]/30 rounded-md px-1.5 py-0.5">
+        {/* Integrated Navigation & Mode Controls in a unified bar */}
+        <div className="flex items-center self-start sm:self-auto bg-[#EDE8DA] border border-[#565248]/30 rounded-lg p-1 shadow-2xs space-x-1">
+          {/* Week Mode Button with integrated stepper */}
+          <div className={`flex items-center rounded-md transition-all ${viewMode === 'week' ? 'bg-[#A8342A] text-[#EDE8DA] shadow-2xs' : 'text-[#565248]'}`}>
+            {viewMode === 'week' && (
               <button
                 id="expense-flow-prev-week-btn"
                 onClick={() => setWeekOffset((prev) => Math.max(prev - 1, -(weeksList.length - 1)))}
                 disabled={currentWeekIndex <= 0}
-                className="p-1 text-[#565248] hover:text-[#23211D] disabled:opacity-30 rounded-xs cursor-pointer"
+                className="pl-1.5 pr-0.5 py-1 text-[#EDE8DA] hover:text-white disabled:opacity-30 cursor-pointer"
                 title="Previous Week"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
-              <span className="text-xs font-serif font-bold text-[#23211D] px-1 font-tabular whitespace-nowrap">
-                W{currentWeekIndex + 1}
-              </span>
+            )}
+            
+            <button
+              id="expense-flow-week-view-btn"
+              onClick={() => setViewMode('week')}
+              className={`px-2 py-1 text-xs font-serif font-bold cursor-pointer ${
+                viewMode === 'week' ? 'text-[#EDE8DA]' : 'text-[#565248] hover:text-[#23211D]'
+              }`}
+            >
+              {viewMode === 'week' ? `Week ${currentWeekIndex + 1}` : '7-Day Strip'}
+            </button>
+
+            {viewMode === 'week' && (
               <button
                 id="expense-flow-next-week-btn"
                 onClick={() => setWeekOffset((prev) => Math.min(prev + 1, 0))}
                 disabled={currentWeekIndex >= weeksList.length - 1}
-                className="p-1 text-[#565248] hover:text-[#23211D] disabled:opacity-30 rounded-xs cursor-pointer"
+                className="pr-1.5 pl-0.5 py-1 text-[#EDE8DA] hover:text-white disabled:opacity-30 cursor-pointer"
                 title="Next Week"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
-            </div>
-          )}
+            )}
+          </div>
+
+          <div className="w-[1px] h-4 bg-[#565248]/20" />
+
+          {/* Month View Button */}
+          <button
+            id="expense-flow-month-view-btn"
+            onClick={() => setViewMode('month')}
+            className={`px-3 py-1 rounded-md text-xs font-serif font-bold transition-all cursor-pointer ${
+              viewMode === 'month'
+                ? 'bg-[#A8342A] text-[#EDE8DA] shadow-2xs'
+                : 'text-[#565248] hover:text-[#23211D]'
+            }`}
+          >
+            Full Month
+          </button>
         </div>
       </div>
 
@@ -425,48 +428,67 @@ export const ExpenseFlowChart: React.FC<ExpenseFlowChartProps> = ({
 
       {/* 3. Pillar Filter Bar */}
       <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-[#565248]/15">
-        <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+        <div className="flex items-center space-x-1.5 flex-wrap gap-y-1.5">
           <span className="text-xs font-serif font-bold text-[#565248] mr-1 flex items-center space-x-1">
-            <Layers className="w-3 h-3" />
-            <span>Filter Pillar:</span>
+            <Layers className="w-3.5 h-3.5" />
+            <span>Pillars:</span>
           </span>
           <button
             type="button"
             onClick={() => setSelectedPillar('all')}
-            className={`px-2.5 py-1 rounded-md text-xs font-serif transition-all cursor-pointer border ${
+            className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-serif transition-all cursor-pointer border ${
               selectedPillar === 'all'
-                ? 'bg-[#23211D] text-[#EDE8DA] border-[#23211D] font-bold shadow-2xs'
+                ? 'bg-[#23211D] text-[#EDE8DA] border-[#23211D] font-bold shadow-xs'
                 : 'bg-[#EDE8DA] text-[#565248] border-[#565248]/20 hover:bg-[#E5DFCE]'
             }`}
           >
-            All Pillars
+            <Layers className="w-3 h-3" />
+            <span>All Pillars</span>
           </button>
           {(Object.keys(categories) as Category[]).map((catKey) => {
             const cat = categories[catKey];
             const isSelected = selectedPillar === catKey;
+            
+            // Map category to corresponding icon
+            const renderIcon = () => {
+              switch (catKey) {
+                case 'survival':
+                  return <Shield className="w-3 h-3" />;
+                case 'optional':
+                  return <Sparkles className="w-3 h-3" />;
+                case 'culture':
+                  return <BookOpen className="w-3 h-3" />;
+                case 'extra':
+                default:
+                  return <AlertCircle className="w-3 h-3" />;
+              }
+            };
+
             return (
               <button
                 key={catKey}
                 type="button"
                 onClick={() => setSelectedPillar(catKey)}
-                className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-serif transition-all cursor-pointer border ${
+                className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-serif transition-all cursor-pointer border ${
                   isSelected
-                    ? 'border-[#23211D] bg-[#EDE8DA] ring-1 ring-[#23211D] font-bold text-[#23211D] shadow-2xs'
+                    ? 'border-[#23211D] bg-[#EDE8DA] ring-2 ring-[#23211D] font-bold text-[#23211D] shadow-xs'
                     : 'border-[#565248]/20 bg-[#EDE8DA] text-[#565248] hover:bg-[#E5DFCE]'
                 }`}
               >
                 <span 
-                  className="w-2 h-2 rounded-full inline-block shrink-0" 
+                  className="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-2xs" 
                   style={{ backgroundColor: cat.color }} 
                 />
-                <span>{cat.name}</span>
+                <span className="flex items-center space-x-1">
+                  <span>{cat.name}</span>
+                </span>
               </button>
             );
           })}
         </div>
 
         <div className="text-xs text-[#565248] font-serif font-medium hidden sm:block">
-          Click on any day node to inspect
+          Click any point to inspect
         </div>
       </div>
 
@@ -666,13 +688,13 @@ export const ExpenseFlowChart: React.FC<ExpenseFlowChartProps> = ({
         </div>
       </div>
 
-      {/* 5. 7-Day DayBook Strip Table (Screenshot 4 Style) */}
+      {/* 5. 7-Day Daily Strip Table */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-1.5">
             <Calendar className="w-3.5 h-3.5 text-[#A8342A]" />
             <h4 className="font-serif text-xs sm:text-sm font-bold text-[#23211D]">
-              7-Day DayBook Strip (日計明細)
+              7-Day Spending Strip
             </h4>
           </div>
           <span className="text-[11px] text-[#565248]">
@@ -723,7 +745,7 @@ export const ExpenseFlowChart: React.FC<ExpenseFlowChartProps> = ({
                     </span>
                   ) : (
                     <span className="text-[9px] sm:text-[10px] font-serif text-[#5C6E4E] bg-[#5C6E4E]/10 rounded-xs px-1 py-0.2 block truncate">
-                      無買 (0)
+                      Zero ($0)
                     </span>
                   )}
                 </div>
@@ -733,81 +755,100 @@ export const ExpenseFlowChart: React.FC<ExpenseFlowChartProps> = ({
         </div>
       </div>
 
-      {/* 6. Selected Day Detailed Inspector (Itemized Ledger Entries for Selected Date) */}
+      {/* 6. Selected Day Detailed Inspector (Itemized Transaction Entries for Selected Date) */}
       {selectedDate && (
-        <div className="bg-[#EDE8DA] border border-[#A8342A]/40 rounded-xl p-4 shadow-sm space-y-3 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between border-b border-[#565248]/20 pb-2">
-            <div className="flex items-center space-x-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#A8342A]" />
+        <div className="bg-[#EDE8DA] border-2 border-[#565248]/30 rounded-xl p-4 sm:p-5 shadow-sm space-y-3.5 animate-in fade-in duration-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#565248]/20 pb-3">
+            <div className="flex items-center space-x-2.5 flex-wrap gap-y-1.5">
+              <div className="w-7 h-7 rounded-full bg-[#A8342A] text-[#EDE8DA] flex items-center justify-center shadow-2xs shrink-0">
+                <Calendar className="w-3.5 h-3.5" />
+              </div>
               <h4 className="font-serif text-sm sm:text-base font-bold text-[#23211D]">
-                DayBook Breakdown: {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
               </h4>
-              <span className="text-xs font-bold text-[#A8342A] font-tabular bg-[#A8342A]/10 px-2 py-0.5 rounded-md">
+              <span className="text-xs font-serif font-bold text-[#A8342A] font-tabular bg-[#E5DFCE] border border-[#565248]/20 px-2.5 py-0.5 rounded-full shadow-2xs">
                 Total: {formatCurrency(expensesByDate[selectedDate]?.reduce((sum, e) => sum + e.amount, 0) || 0, currency)}
               </span>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 self-start sm:self-auto">
               {onRecordExpenseForDate && (
                 <button
                   type="button"
                   onClick={() => onRecordExpenseForDate(selectedDate)}
-                  className="flex items-center space-x-1 text-xs bg-[#A8342A] hover:bg-[#8F2B22] text-[#EDE8DA] px-2.5 py-1 rounded-md font-serif font-bold transition-colors cursor-pointer shadow-2xs"
+                  className="flex items-center space-x-1.5 text-xs bg-[#A8342A] hover:bg-[#8F2B22] text-[#EDE8DA] px-3 py-1.5 rounded-md font-serif font-bold transition-all cursor-pointer shadow-xs active:scale-98"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Log on this Day</span>
+                  <span>+ Log on this Day</span>
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => setSelectedDate(null)}
-                className="text-xs text-[#565248] hover:text-[#23211D] font-serif cursor-pointer underline ml-1"
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-[#E5DFCE] hover:bg-[#565248]/20 text-[#565248] hover:text-[#23211D] transition-colors cursor-pointer border border-[#565248]/25 shadow-2xs"
+                title="Close breakdown"
               >
-                Close
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* List of items on this day */}
           {(!expensesByDate[selectedDate] || expensesByDate[selectedDate].length === 0) ? (
-            <div className="text-center py-4 text-xs font-serif text-[#5C6E4E] space-y-1">
-              <p className="font-bold">✨ Zero Outlays Logged on this Day</p>
-              <p className="text-[#565248]">A classical Kakeibo no-spend day (無買日) for mindful preservation.</p>
+            <div className="text-center py-5 text-xs font-serif text-[#5C6E4E] space-y-1 bg-[#E5DFCE]/40 rounded-lg border border-[#565248]/15 p-3">
+              <p className="font-bold text-sm">✨ Zero Outlays Logged</p>
+              <p className="text-[#565248]">A mindful zero-spend day for steady savings preservation.</p>
             </div>
           ) : (
-            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
               {expensesByDate[selectedDate].map((item) => {
                 const cat = categories[item.category];
+                const dateObj = new Date(item.date);
+                const formattedTime = !isNaN(dateObj.getTime())
+                  ? dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
+                  : '';
+
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between bg-[#E5DFCE]/60 border border-[#565248]/20 rounded-lg p-2.5 hover:bg-[#E5DFCE] transition-colors"
+                    className="bg-[#EDE8DA]/80 border border-[#565248]/20 rounded-lg p-3 hover:bg-[#EDE8DA] transition-all space-y-1.5 shadow-2xs"
                   >
-                    <div className="flex items-center space-x-2.5">
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: cat.color }}
-                      />
-                      <div>
-                        <div className="font-serif text-xs font-bold text-[#23211D]">
-                          {item.note || cat.name}
-                        </div>
-                        <div className="text-[10px] text-[#565248] flex items-center space-x-1.5">
+                    {/* Top Row: Category Pillar Pill + Budget Line Tag (Left), Spent Amount in Button Box (Right) */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                        {/* Category Pillar Pill */}
+                        <span 
+                          className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md text-[11px] font-serif font-bold text-[#EDE8DA] shadow-2xs"
+                          style={{ backgroundColor: cat.color }}
+                        >
                           <span>{cat.name}</span>
-                          {item.budgetLineName && (
-                            <>
-                              <span>•</span>
-                              <span className="italic">{item.budgetLineName}</span>
-                            </>
-                          )}
-                          <span>•</span>
-                          <span>{new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
+                        </span>
+
+                        {/* Budget Line Tag if present */}
+                        {item.budgetLineName && (
+                          <span className="text-[10px] bg-[#E5DFCE] border border-[#565248]/25 px-1.5 py-0.5 rounded-md font-serif text-[#23211D]">
+                            🏷️ {item.budgetLineName}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Spent Amount in Button Box on Top Right */}
+                      <div className="bg-[#E5DFCE] border border-[#565248]/25 px-2.5 py-0.5 rounded-md shadow-2xs font-tabular">
+                        <span className="font-serif font-bold text-sm sm:text-base text-[#A8342A]">
+                          -{formatCurrency(item.amount, currency)}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="font-serif font-bold text-xs sm:text-sm text-[#A8342A] font-tabular">
-                      -{formatCurrency(item.amount, currency)}
+                    {/* Bottom Row: Description in clean text, with time at bottom right */}
+                    <div className="flex items-center justify-between text-xs text-[#565248] pt-0.5">
+                      <span className="text-xs sm:text-sm font-medium text-[#23211D] truncate max-w-[75%]">
+                        {item.note || <span className="italic text-[#565248]">{cat.name}</span>}
+                      </span>
+
+                      <span className="text-[11px] text-[#565248] font-tabular whitespace-nowrap">
+                        {formattedTime}
+                      </span>
                     </div>
                   </div>
                 );

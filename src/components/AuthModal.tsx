@@ -76,7 +76,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Modal Header */}
         <div className="text-center space-y-2 mb-6">
           <div className="w-12 h-12 rounded-full border-2 border-[#A8342A] mx-auto flex items-center justify-center bg-[#E5DFCE] text-[#A8342A]">
-            <span className="font-serif text-xl font-bold">家</span>
+            <span className="font-serif text-xl font-bold">M</span>
           </div>
           <h3 className="font-serif text-xl font-bold text-[#23211D]">
             {t.authTitle}

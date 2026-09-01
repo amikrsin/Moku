@@ -6,7 +6,7 @@ import {
   SavingsEntry, 
   SUPPORTED_CURRENCIES 
 } from '../types';
-import { formatCurrency, formatMonthName, generateUUID } from '../lib/storage';
+import { formatCurrency, formatMonthName } from '../lib/storage';
 import { HankoStamp } from './HankoStamp';
 import { SavingsModal } from './SavingsModal';
 import { getT, getCategoriesForCurrency } from '../lib/i18n';
@@ -25,11 +25,10 @@ import {
   Landmark,
   ShieldCheck,
   Copy,
-  Zap,
   Plus,
-  Check
+  Check,
+  ArrowRight
 } from 'lucide-react';
-import { QuickLogModal } from './QuickLogModal';
 import { ExpenseFlowChart } from './ExpenseFlowChart';
 
 interface DashboardViewProps {
@@ -55,7 +54,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   expenses,
   savingsEntries = [],
   allPlans = [],
-  onSaveExpense,
+  onSaveExpense: _onSaveExpense,
   onSaveSavings,
   onDeleteSavings,
   onRecordExpense,
@@ -71,61 +70,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const currencySymbol = SUPPORTED_CURRENCIES.find((c) => c.code === currency)?.symbol || '₹';
 
   const [isSavingsModalOpen, setIsSavingsModalOpen] = useState(false);
-  const [isQuickLogModalOpen, setIsQuickLogModalOpen] = useState(false);
-
-  // Quick Log inline form state
-  const [quickAmount, setQuickAmount] = useState<string>('');
-  const [quickCategory, setQuickCategory] = useState<Category>('survival');
-  const [quickBudgetLineId, setQuickBudgetLineId] = useState<string>('');
-  const [quickNote, setQuickNote] = useState<string>('');
-  const [quickDate, setQuickDate] = useState<string>(() => {
-    const d = new Date();
-    return d.toISOString().split('T')[0];
-  });
-  const [quickSuccessMsg, setQuickSuccessMsg] = useState<string | null>(null);
-
-  const activeCategoryLines = plan?.categoryBudgetLines?.[quickCategory] || [];
-
-  const handleQuickSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const num = parseFloat(quickAmount);
-    if (isNaN(num) || num <= 0) return;
-
-    const now = new Date();
-    const [y, m, d] = quickDate.split('-').map((v) => parseInt(v, 10));
-    const finalDate = new Date(y, m - 1, d, now.getHours(), now.getMinutes(), now.getSeconds());
-    const expenseMonthKey = `${y}-${String(m).padStart(2, '0')}`;
-
-    const chosenLine = activeCategoryLines.find((l) => l.id === quickBudgetLineId);
-
-    const newExpense: Expense = {
-      id: generateUUID(),
-      monthKey: expenseMonthKey,
-      amount: num,
-      category: quickCategory,
-      budgetLineId: chosenLine?.id,
-      budgetLineName: chosenLine?.name,
-      note: quickNote.trim(),
-      date: finalDate.toISOString(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      deleted: false,
-    };
-
-    if (onSaveExpense) {
-      onSaveExpense(newExpense);
-    }
-
-    const savedSummary = `${currencySymbol}${num.toLocaleString()} for ${quickNote.trim() || categories[quickCategory].name}`;
-    setQuickSuccessMsg(`Recorded ${savedSummary}`);
-    setQuickAmount('');
-    setQuickNote('');
-    setQuickBudgetLineId('');
-
-    setTimeout(() => {
-      setQuickSuccessMsg(null);
-    }, 3500);
-  };
 
   const [expandedCategories, setExpandedCategories] = useState<Record<Category, boolean>>({
     survival: true,
@@ -195,7 +139,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="text-center py-10 px-4 max-w-lg mx-auto space-y-5">
         <div className="w-16 h-16 rounded-full border-2 border-[#A8342A] mx-auto flex items-center justify-center bg-[#E5DFCE] text-[#A8342A]">
           <span className="font-serif text-2xl font-bold">
-            家
+            M
           </span>
         </div>
         <div>
@@ -389,31 +333,54 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* Savings Target Progress Bar & Dedicated Logged Savings */}
-      <div className="bg-[#E5DFCE]/70 border border-[#565248]/25 rounded-lg p-4 sm:p-5 shadow-2xs space-y-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center space-x-2">
-            <TrendingUp className="w-4 h-4 text-[#5C6E4E]" />
-            <h3 className="font-serif text-base font-bold text-[#23211D]">
-              Monthly Savings Target & Actual Progress
-            </h3>
+      <div className="bg-[#E5DFCE]/70 border border-[#565248]/25 rounded-lg p-4 sm:p-5 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#565248]/15 pb-3">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-full bg-[#5C6E4E] text-[#EDE8DA] flex items-center justify-center shadow-2xs">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-serif text-base font-bold text-[#23211D]">
+                Monthly Savings Target & Actual Progress
+              </h3>
+              <p className="text-[11px] text-[#565248]">
+                {savingsProgressPercent}% of target goal achieved
+              </p>
+            </div>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <span className="font-serif font-bold text-sm text-[#5C6E4E] font-tabular">
-              {formatCurrency(loggedSavings, currency)} / {formatCurrency(savingsTarget, currency)}
+          <button
+            id="open-savings-modal-link"
+            onClick={() => setIsSavingsModalOpen(true)}
+            className="flex items-center space-x-1.5 bg-[#5C6E4E] hover:bg-[#4B5B3E] text-[#EDE8DA] px-3 py-1.5 rounded-md font-serif font-bold text-xs shadow-xs transition-all active:scale-98 cursor-pointer self-start sm:self-auto"
+          >
+            <PiggyBank className="w-3.5 h-3.5" />
+            <span>+ Log Savings</span>
+          </button>
+        </div>
+
+        <div className="flex items-baseline justify-between font-tabular">
+          <div>
+            <span className="text-[10px] uppercase font-serif tracking-wider text-[#565248] font-bold block">
+              Logged Actual
             </span>
-            <button
-              id="open-savings-modal-link"
-              onClick={() => setIsSavingsModalOpen(true)}
-              className="text-xs bg-[#5C6E4E] hover:bg-[#4B5B3E] text-[#EDE8DA] px-2 py-1 rounded-md font-serif font-bold transition-colors cursor-pointer"
-            >
-              + Log Savings
-            </button>
+            <span className="font-serif font-bold text-xl sm:text-2xl text-[#5C6E4E]">
+              {formatCurrency(loggedSavings, currency)}
+            </span>
+          </div>
+
+          <div className="text-right">
+            <span className="text-[10px] uppercase font-serif tracking-wider text-[#565248] font-bold block">
+              Target Goal
+            </span>
+            <span className="font-serif font-bold text-lg text-[#23211D]">
+              {formatCurrency(savingsTarget, currency)}
+            </span>
           </div>
         </div>
 
         {/* Brush-style progress bar based on ACTUAL LOGGED SAVINGS */}
-        <div className="h-4 bg-[#EDE8DA] rounded-xs border border-[#565248]/30 overflow-hidden relative p-[1px]">
+        <div className="h-3.5 bg-[#EDE8DA] rounded-xs border border-[#565248]/30 overflow-hidden relative p-[1px]">
           <div
             className="h-full rounded-xs transition-all duration-500 relative"
             style={{
@@ -453,55 +420,68 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="text-[11px] font-serif uppercase tracking-wider text-[#565248] font-bold">
               Active Savings Log This Month:
             </div>
-            <div className="divide-y divide-[#565248]/10 bg-[#EDE8DA]/70 rounded-md border border-[#565248]/20 overflow-hidden">
+            <div className="space-y-2">
               {activeSavings.map((entry) => {
                 const dateObj = entry.date ? new Date(entry.date) : null;
                 const formattedDate = dateObj && !isNaN(dateObj.getTime())
                   ? dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                   : '';
+                const formattedTime = dateObj && !isNaN(dateObj.getTime())
+                  ? dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+                  : '';
                 const destTitle = destinationLabels[entry.destination] || entry.destination;
 
                 return (
-                  <div key={entry.id} className="p-2.5 flex items-center justify-between hover:bg-[#E5DFCE]/40 transition-colors">
-                    <div className="flex items-center space-x-2.5 min-w-0">
-                      <div className="w-6 h-6 rounded-full bg-[#5C6E4E] text-[#EDE8DA] flex items-center justify-center text-xs shrink-0">
-                        <Landmark className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-semibold text-[#23211D] flex items-center space-x-1.5 truncate">
+                  <div
+                    key={entry.id}
+                    className="bg-[#EDE8DA]/80 border border-[#565248]/20 rounded-lg p-3 hover:bg-[#EDE8DA] transition-all space-y-1.5 shadow-2xs"
+                  >
+                    {/* Top Row: Destination Pill + Expected Return Tag (Left), Saved Amount Pill (Right) */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                        {/* Destination Pill */}
+                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md text-[11px] font-serif font-bold text-[#EDE8DA] bg-[#5C6E4E] shadow-2xs">
+                          <Landmark className="w-3 h-3" />
                           <span>{entry.destinationCustom || destTitle}</span>
-                          {entry.committedReturn && (
-                            <span className="text-[10px] bg-[#5C6E4E]/15 text-[#5C6E4E] border border-[#5C6E4E]/30 px-1 py-0.2 rounded-xs">
-                              {entry.committedReturn}
-                            </span>
-                          )}
+                        </span>
+
+                        {/* Expected Return Pill */}
+                        {entry.committedReturn && (
+                          <span className="text-[10px] bg-[#E5DFCE] border border-[#5C6E4E]/30 text-[#5C6E4E] px-1.5 py-0.5 rounded-md font-serif font-semibold font-tabular">
+                            📈 {entry.committedReturn}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Saved Amount Pill on Top Right with Delete Action */}
+                      <div className="flex items-center space-x-2">
+                        <div className="bg-[#E5DFCE] border border-[#565248]/25 px-2.5 py-0.5 rounded-md shadow-2xs font-tabular">
+                          <span className="font-serif font-bold text-sm sm:text-base text-[#5C6E4E]">
+                            +{formatCurrency(entry.amount, currency)}
+                          </span>
                         </div>
-                        <div className="text-[10px] text-[#565248] flex items-center space-x-1.5">
-                          {formattedDate && <span>{formattedDate}</span>}
-                          {entry.notes && (
-                            <>
-                              <span>•</span>
-                              <span className="italic truncate">"{entry.notes}"</span>
-                            </>
-                          )}
-                        </div>
+                        {onDeleteSavings && (
+                          <button
+                            type="button"
+                            onClick={() => onDeleteSavings(entry.id)}
+                            className="p-1 text-[#565248]/50 hover:text-[#A8342A] hover:bg-[#E5DFCE] rounded-xs transition-colors cursor-pointer"
+                            title="Delete savings entry"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-2 shrink-0">
-                      <span className="font-serif font-bold text-sm text-[#5C6E4E] font-tabular">
-                        +{formatCurrency(entry.amount, currency)}
+                    {/* Bottom Row: Description / Note on Left, Date & Time on Right */}
+                    <div className="flex items-center justify-between text-xs text-[#565248] pt-0.5">
+                      <span className="text-xs sm:text-sm font-medium text-[#23211D] truncate max-w-[70%]">
+                        {entry.notes || <span className="italic text-[#565248]">Deposit to {entry.destinationCustom || destTitle}</span>}
                       </span>
-                      {onDeleteSavings && (
-                        <button
-                          type="button"
-                          onClick={() => onDeleteSavings(entry.id)}
-                          className="p-1 text-[#565248]/50 hover:text-[#A8342A] rounded-xs transition-colors cursor-pointer"
-                          title="Delete savings entry"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+
+                      <span className="text-[11px] text-[#565248] font-tabular whitespace-nowrap">
+                        {formattedDate}{formattedTime ? ` • ${formattedTime}` : ''}
+                      </span>
                     </div>
                   </div>
                 );
@@ -517,181 +497,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         expenses={expenses}
         plan={plan}
         currency={currency}
-        onRecordExpenseForDate={(dateStr) => {
-          setQuickDate(dateStr);
-          // scroll smoothly to quick log
-          const quickEl = document.getElementById('inline-quick-amount');
-          quickEl?.focus();
+        onRecordExpenseForDate={(_dateStr) => {
+          onRecordExpense();
         }}
         onOpenLedger={onOpenLedger}
       />
-
-      {/* Inline Quick Log Card */}
-      <div className="bg-[#EDE8DA] border-2 border-[#565248]/30 rounded-lg p-4 sm:p-5 shadow-xs space-y-3.5 relative">
-        <div className="flex items-center justify-between border-b border-[#565248]/15 pb-2.5">
-          <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 rounded-full bg-[#A8342A] text-[#EDE8DA] flex items-center justify-center shadow-2xs">
-              <Zap className="w-3.5 h-3.5 fill-current" />
-            </div>
-            <div>
-              <h3 className="font-serif text-sm sm:text-base font-bold text-[#23211D] flex items-center space-x-1.5">
-                <span>Quick Log Expense</span>
-                <span className="text-[11px] font-sans font-normal text-[#565248]">
-                  • 即時記帳
-                </span>
-              </h3>
-              <p className="text-[11px] text-[#565248]">
-                Add an expense directly to this month's ledger without leaving the dashboard
-              </p>
-            </div>
-          </div>
-
-          <button
-            id="open-full-record-view-btn"
-            onClick={onRecordExpense}
-            className="text-xs text-[#A8342A] hover:underline font-serif font-medium hidden sm:inline-block cursor-pointer"
-          >
-            Full Form →
-          </button>
-        </div>
-
-        {/* Quick Log Form */}
-        <form onSubmit={handleQuickSubmit} className="space-y-3">
-          {/* Top row: Amount, Note, Date */}
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-            {/* Amount (4 cols on sm) */}
-            <div className="sm:col-span-4">
-              <label className="block text-[11px] font-serif font-semibold text-[#23211D] mb-1">
-                Amount ({currencySymbol}) *
-              </label>
-              <div className="relative">
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-serif text-[#A8342A] font-bold text-sm">
-                  {currencySymbol}
-                </span>
-                <input
-                  id="inline-quick-amount"
-                  type="number"
-                  step="any"
-                  min="0.01"
-                  required
-                  placeholder="0.00"
-                  value={quickAmount}
-                  onChange={(e) => setQuickAmount(e.target.value)}
-                  className="w-full bg-[#E5DFCE]/80 border border-[#565248]/30 rounded-md pl-7 pr-2.5 py-1.5 text-sm font-bold font-tabular text-[#23211D] focus:outline-hidden focus:border-[#A8342A]"
-                />
-              </div>
-            </div>
-
-            {/* Note / Description (5 cols on sm) */}
-            <div className="sm:col-span-5">
-              <label className="block text-[11px] font-serif font-semibold text-[#23211D] mb-1">
-                Description / Note
-              </label>
-              <input
-                id="inline-quick-note"
-                type="text"
-                placeholder="e.g. Groceries, Metro, Tea"
-                value={quickNote}
-                onChange={(e) => setQuickNote(e.target.value)}
-                className="w-full bg-[#E5DFCE]/80 border border-[#565248]/30 rounded-md px-2.5 py-1.5 text-xs text-[#23211D] focus:outline-hidden focus:border-[#A8342A]"
-              />
-            </div>
-
-            {/* Date (3 cols on sm) */}
-            <div className="sm:col-span-3">
-              <label className="block text-[11px] font-serif font-semibold text-[#23211D] mb-1">
-                Date
-              </label>
-              <input
-                id="inline-quick-date"
-                type="date"
-                required
-                value={quickDate}
-                onChange={(e) => setQuickDate(e.target.value)}
-                className="w-full bg-[#E5DFCE]/80 border border-[#565248]/30 rounded-md px-2 py-1.5 text-xs font-tabular text-[#23211D] focus:outline-hidden focus:border-[#A8342A]"
-              />
-            </div>
-          </div>
-
-          {/* Bottom row: Category Pills + Optional Budget Line + Submit button */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 pt-1">
-            {/* Category selection buttons */}
-            <div className="flex items-center space-x-1.5 flex-wrap gap-y-1.5">
-              <span className="text-[11px] font-serif font-semibold text-[#565248] mr-1 hidden sm:inline">
-                Pillar:
-              </span>
-              {(Object.keys(categories) as Category[]).map((catKey) => {
-                const cat = categories[catKey];
-                const isSelected = quickCategory === catKey;
-
-                return (
-                  <button
-                    key={catKey}
-                    type="button"
-                    onClick={() => {
-                      setQuickCategory(catKey);
-                      setQuickBudgetLineId('');
-                    }}
-                    className={`flex items-center space-x-1 px-2 py-1 rounded-md text-xs transition-all cursor-pointer border ${
-                      isSelected
-                        ? 'border-[#23211D] bg-[#E5DFCE] font-bold text-[#23211D] shadow-2xs'
-                        : 'border-[#565248]/20 bg-[#EDE8DA] hover:bg-[#E5DFCE]/50 text-[#565248]'
-                    }`}
-                  >
-                    <span 
-                      className="w-2 h-2 rounded-full inline-block shrink-0" 
-                      style={{ backgroundColor: cat.color }} 
-                    />
-                    <span>{cat.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Sub-category line + Log button */}
-            <div className="flex items-center space-x-2 self-end md:self-auto w-full md:w-auto">
-              {activeCategoryLines.length > 0 && (
-                <div className="relative flex-1 md:w-44">
-                  <select
-                    id="inline-quick-budget-line"
-                    value={quickBudgetLineId}
-                    onChange={(e) => setQuickBudgetLineId(e.target.value)}
-                    className="w-full bg-[#E5DFCE]/80 border border-[#565248]/30 rounded-md px-2 py-1.5 text-[11px] font-serif text-[#23211D] focus:outline-hidden focus:border-[#A8342A] cursor-pointer truncate"
-                  >
-                    <option value="">-- General ({categories[quickCategory].name}) --</option>
-                    {activeCategoryLines.map((line) => (
-                      <option key={line.id} value={line.id}>
-                        {line.name} {line.budget ? `(${currencySymbol}${line.budget})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <button
-                id="inline-submit-quick-log-btn"
-                type="submit"
-                disabled={!quickAmount || parseFloat(quickAmount) <= 0}
-                className="flex items-center space-x-1.5 bg-[#A8342A] hover:bg-[#8F2B22] disabled:opacity-50 text-[#EDE8DA] font-serif font-bold text-xs px-4 py-1.5 rounded-md shadow-xs transition-all active:scale-98 cursor-pointer shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Quick Log</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Inline Success Notice */}
-          {quickSuccessMsg && (
-            <div className="bg-[#5C6E4E]/15 border border-[#5C6E4E]/40 rounded-md px-3 py-2 flex items-center justify-between animate-in fade-in">
-              <div className="flex items-center space-x-2 text-xs text-[#5C6E4E] font-serif font-bold">
-                <Check className="w-3.5 h-3.5" />
-                <span>{quickSuccessMsg}</span>
-              </div>
-              <HankoStamp size="sm" animate={true} text={t.stampRecorded} />
-            </div>
-          )}
-        </form>
-      </div>
 
       {/* Four Category Budget Bars & Sub-Category Budget Lines */}
       <div className="bg-[#E5DFCE]/70 border border-[#565248]/25 rounded-lg p-4 sm:p-5 shadow-2xs space-y-4">
@@ -891,20 +701,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
 
       {/* 5 Most Recent Entries Strictly for this month */}
-      <div className="bg-[#E5DFCE]/70 border border-[#565248]/25 rounded-lg p-4 sm:p-5 shadow-2xs space-y-3">
-        <div className="flex items-center justify-between border-b border-[#565248]/15 pb-2.5">
+      <div className="bg-[#E5DFCE]/70 border border-[#565248]/25 rounded-lg p-4 sm:p-5 shadow-2xs space-y-3.5">
+        <div className="flex items-center justify-between border-b border-[#565248]/15 pb-3">
           <div className="flex items-center space-x-2">
-            <Clock className="w-4 h-4 text-[#565248]" />
+            <Clock className="w-4 h-4 text-[#A8342A]" />
             <h3 className="font-serif text-base font-bold text-[#23211D]">
-              {t.dashboardRecentEntries}
+              Recent Entries
             </h3>
           </div>
           <button
             id="view-full-ledger-btn"
             onClick={onOpenLedger}
-            className="text-xs text-[#A8342A] hover:underline font-serif font-medium cursor-pointer"
+            className="flex items-center space-x-1 text-xs bg-[#EDE8DA] hover:bg-[#E5DFCE] border border-[#565248]/25 text-[#23211D] px-2.5 py-1 rounded-md font-serif font-semibold transition-colors cursor-pointer shadow-2xs group"
           >
-            {t.dashboardViewAll} ({activeExpenses.length}) →
+            <span>View All Records ({activeExpenses.length})</span>
+            <ArrowRight className="w-3 h-3 text-[#A8342A] transition-transform group-hover:translate-x-0.5" />
           </button>
         </div>
 
@@ -913,7 +724,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {t.dashboardNoExpenses}
           </div>
         ) : (
-          <div className="divide-y divide-[#565248]/15">
+          <div className="space-y-2">
             {recentEntries.map((item) => {
               const cat = categories[item.category];
               const dateObj = new Date(item.date);
@@ -921,48 +732,59 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 month: 'short',
                 day: 'numeric',
               });
+              const formattedTime = dateObj.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              });
               const isJustAdded = recentlyAddedId === item.id;
 
               return (
                 <div
                   key={item.id}
-                  className={`py-2.5 flex items-center justify-between transition-colors ${
-                    isJustAdded ? 'bg-[#A8342A]/10 rounded-sm px-2 -mx-2' : ''
+                  className={`bg-[#EDE8DA]/80 border border-[#565248]/20 rounded-lg p-3 hover:bg-[#EDE8DA] transition-all space-y-1.5 shadow-2xs ${
+                    isJustAdded ? 'ring-2 ring-[#A8342A]/40 bg-[#A8342A]/5' : ''
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
-                    {/* Category color dot & initial */}
-                    <div 
-                      className="w-7 h-7 rounded-sm flex items-center justify-center font-serif text-xs font-bold text-[#EDE8DA] shrink-0"
-                      style={{ backgroundColor: cat.color }}
-                      title={`${cat.name} (${cat.badge})`}
-                    >
-                      {cat.name[0]}
+                  {/* Top Row: Category Pillar Pill + Budget Line Tag (Left), Spent Amount Pill (Right) */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                      {/* Category Pillar Pill */}
+                      <span 
+                        className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md text-[11px] font-serif font-bold text-[#EDE8DA] shadow-2xs"
+                        style={{ backgroundColor: cat.color }}
+                      >
+                        <span>{cat.name}</span>
+                      </span>
+
+                      {/* Budget Line Tag if present */}
+                      {item.budgetLineName && (
+                        <span className="text-[10px] bg-[#E5DFCE] border border-[#565248]/25 px-1.5 py-0.5 rounded-md font-serif text-[#23211D]">
+                          🏷️ {item.budgetLineName}
+                        </span>
+                      )}
+
+                      {isJustAdded && (
+                        <HankoStamp size="sm" animate={true} text={t.stampRecorded} />
+                      )}
                     </div>
 
-                    <div>
-                      <div className="text-xs sm:text-sm font-medium text-[#23211D] flex items-center space-x-1.5">
-                        <span>{item.note || cat.name}</span>
-                        {item.budgetLineName && (
-                          <span className="text-[10px] bg-[#E5DFCE] border border-[#565248]/20 px-1 py-0.2 rounded-xs font-serif text-[#23211D]">
-                            🏷️ {item.budgetLineName}
-                          </span>
-                        )}
-                        {isJustAdded && (
-                          <HankoStamp size="sm" animate={true} text={t.stampRecorded} />
-                        )}
-                      </div>
-                      <div className="text-[11px] text-[#565248] flex items-center space-x-1.5">
-                        <span>{formattedDate}</span>
-                        <span>•</span>
-                        <span>{cat.name}</span>
-                      </div>
+                    {/* Spent Amount Pill on Top Right */}
+                    <div className="bg-[#E5DFCE] border border-[#565248]/25 px-2.5 py-0.5 rounded-md shadow-2xs font-tabular">
+                      <span className="font-serif font-bold text-sm sm:text-base text-[#A8342A]">
+                        {formatCurrency(item.amount, currency)}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="text-right font-tabular">
-                    <span className="font-serif font-bold text-sm sm:text-base text-[#23211D]">
-                      {formatCurrency(item.amount, currency)}
+                  {/* Bottom Row: Description in clean text, with time & date at bottom */}
+                  <div className="flex items-center justify-between text-xs text-[#565248] pt-0.5">
+                    <span className="text-xs sm:text-sm font-medium text-[#23211D] truncate max-w-[70%]">
+                      {item.note || <span className="italic text-[#565248]">{cat.name}</span>}
+                    </span>
+
+                    <span className="text-[11px] text-[#565248] font-tabular whitespace-nowrap">
+                      {formattedDate} • {formattedTime}
                     </span>
                   </div>
                 </div>
@@ -1001,33 +823,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         currency={currency}
         selectedMonth={monthKey}
       />
-
-      {/* Quick Log Modal for FAB */}
-      <QuickLogModal
-        isOpen={isQuickLogModalOpen}
-        onClose={() => setIsQuickLogModalOpen(false)}
-        monthKey={monthKey}
-        plan={plan}
-        currency={currency}
-        onSaveExpense={(newExpense) => {
-          if (onSaveExpense) {
-            onSaveExpense(newExpense);
-          }
-        }}
-      />
-
-      {/* Persistent Floating Action Button (FAB) */}
-      <button
-        id="persistent-quick-log-fab"
-        onClick={() => setIsQuickLogModalOpen(true)}
-        className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 z-40 flex items-center space-x-2 bg-[#A8342A] hover:bg-[#8F2B22] text-[#EDE8DA] px-4 py-3 sm:px-5 sm:py-3.5 rounded-full shadow-xl border border-[#8F2B22]/60 hover:shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer font-serif font-bold text-xs sm:text-sm group"
-        title="Quick Log Expense (FAB)"
-      >
-        <Zap className="w-4 h-4 fill-current group-hover:rotate-12 transition-transform" />
-        <span className="tracking-wide">Quick Log</span>
-        <Plus className="w-3.5 h-3.5" />
-      </button>
-
     </div>
   );
 };

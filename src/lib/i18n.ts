@@ -69,14 +69,14 @@ export function getCategoryInfo(category: Category, _currency?: string): Localiz
 
 export const translations = {
   en: {
-    appTitle: 'Kakeibo Ledger',
-    appSubhead: 'Mindful Household Budgeting',
-    appBadge: 'Ledger',
+    appTitle: 'MOKU',
+    appSubhead: 'Mindful Spending & Budgeting',
+    appBadge: 'Budget',
     stampRecorded: 'DONE',
     stampInscribed: 'RECORDED',
     navOverview: 'Overview',
     navRecord: 'Record',
-    navLedger: 'Ledger',
+    navLedger: 'Transactions',
     navReview: 'Review',
     navPlan: 'Plan',
     currencyLabel: 'Currency:',
@@ -84,7 +84,7 @@ export const translations = {
     accountTitle: 'Account & Sync Status',
     
     // Dashboard
-    dashboardCurrentLedger: 'Current Ledger',
+    dashboardCurrentLedger: 'Monthly Log',
     dashboardEntries: 'entries',
     dashboardRecordExpense: 'Record Expense',
     dashboardMonthlyIntent: 'Monthly Intent:',
@@ -97,12 +97,12 @@ export const translations = {
     dashboardTarget: 'Target',
     dashboardSaved: 'Saved',
     dashboardCategoryBudgets: 'Category Budgets',
-    dashboardCategorySubtitle: 'Monitor consumption across the 4 essential Kakeibo pillars',
+    dashboardCategorySubtitle: 'Monitor spending across the 4 essential categories',
     dashboardRecentEntries: 'Recent Entries',
-    dashboardViewAll: 'View All in Ledger',
+    dashboardViewAll: 'View All Transactions',
     dashboardMonthReview: 'Month-End Review',
     dashboardNoExpenses: 'No expenses recorded for this month yet.',
-    dashboardInscribeFirst: 'Inscribe your first expense to begin mindful tracking.',
+    dashboardInscribeFirst: 'Record your first expense to begin mindful tracking.',
     dashboardBeginSetup: 'Set Up Monthly Plan',
     dashboardNoPlanSub: 'Establish your income, savings target, and category budgets for this month.',
     dashboardOfPlanned: 'of planned',
@@ -111,7 +111,7 @@ export const translations = {
     dashboardSavedSoFar: 'saved so far',
 
     // Record
-    recordHeaderSubtitle: 'Mindful Journaling',
+    recordHeaderSubtitle: 'Mindful Tracking',
     recordHeaderTitle: 'Record an Expense',
     recordAmountLabel: 'Amount Spent',
     recordAmountPlaceholder: '0.00',
@@ -119,17 +119,17 @@ export const translations = {
     recordCategoryHint: 'Each expense belongs to exactly one category',
     recordEg: 'e.g.',
     recordNoteLabel: 'Description / Note',
-    recordNotePlaceholder: 'e.g. Sourdough loaf, Coffee, Books, Metro ticket...',
+    recordNotePlaceholder: 'e.g. Groceries, Coffee, Books, Metro ticket...',
     recordDateLabel: 'Date of Expense',
-    recordButton: 'Inscribe in Ledger',
-    recordSuccessBadge: 'Recorded in Ledger',
+    recordButton: 'Save Expense',
+    recordSuccessBadge: 'Expense Saved',
     recordSuccessQuote: '"By writing it down with intention, you acknowledge the value exchanged."',
     recordAnother: 'Record Another',
     recordReturnOverview: 'Return to Overview',
 
-    // Ledger
-    ledgerHeaderSubtitle: 'Monthly Journal',
-    ledgerHeaderTitle: 'Expense Ledger',
+    // Transactions / Records
+    ledgerHeaderSubtitle: 'Monthly Log',
+    ledgerHeaderTitle: 'Transactions',
     ledgerTotalEntries: 'total entries',
     ledgerAllCategories: 'All Categories',
     ledgerSearchPlaceholder: 'Search notes and descriptions...',
@@ -144,7 +144,7 @@ export const translations = {
     ledgerUndo: 'Undo',
 
     // Monthly Setup
-    setupHeaderSubtitle: 'Monthly Planning Ritual',
+    setupHeaderSubtitle: 'Monthly Planning',
     setupHeaderTitle: 'Monthly Setup',
     setupQ1Title: 'How much can you spend this month?',
     setupQ1Sub: 'Total Available Income',
@@ -156,13 +156,13 @@ export const translations = {
     setupQ4Sub: 'Monthly Commitment',
     setupQ4Placeholder: 'e.g. Cook dinner at home on weeknights, read library books before buying new ones...',
     setupCategorySplitTitle: 'Category Budget Split',
-    setupCategorySplitSub: 'Divide your planned outlays among the 4 Kakeibo categories',
+    setupCategorySplitSub: 'Divide your planned outlays among the 4 budget categories',
     setupBalanced: 'Balanced allocation',
     setupRemainingToAllocate: 'Remaining to allocate:',
     setupOverAllocated: 'Over-allocated by:',
     setupSaveBtn: 'Save Monthly Plan',
-    setupSavedBtn: 'Plan Inscribed',
-    setupZenTip: 'Kakeibo principle: Awareness brings financial calm.',
+    setupSavedBtn: 'Plan Saved',
+    setupZenTip: 'Awareness brings financial calm and confidence.',
 
     // Review
     reviewHeaderSubtitle: 'Month-End Reflection',
@@ -174,20 +174,20 @@ export const translations = {
     reviewPlannedVsActual: 'Planned vs Actual Summary',
     reviewWrittenReflectionTitle: 'Month-End Written Reflection',
     reviewSavedBadge: 'Saved',
-    reviewPrompts: 'Kakeibo reflection prompts: Did you spend money on what truly brought you joy? What unneeded expenses happened? What will you improve next month?',
+    reviewPrompts: 'Reflection prompts: Did you spend money on what truly brought you joy? What unneeded expenses happened? What will you improve next month?',
     reviewReflectionPlaceholder: 'Write your candid thoughts on this month\'s spending, habits that served you, and what you would like to adjust for next month...',
     reviewSaveReflectionBtn: 'Save Reflection',
-    reviewReflectionSavedBtn: 'Reflection Inscribed',
+    reviewReflectionSavedBtn: 'Reflection Saved',
 
     // Export & Auth
-    exportTitle: 'Export Ledger Data',
+    exportTitle: 'Export Transactions',
     exportSub: 'Take full ownership of your financial records in open formats.',
     exportMonthCsv: 'Export Month (CSV)',
     exportMonthCsvSub: 'formatted for Excel & Numbers',
     exportBackupJson: 'Complete Data Backup (JSON)',
     exportBackupJsonSub: 'All monthly plans and recorded entries',
     authTitle: 'Account & Data Sync',
-    authSub: 'Your Kakeibo ledger works completely offline. Sign in to seamlessly sync your records across devices.',
+    authSub: 'MOKU works completely offline. Sign in to seamlessly sync your records across devices.',
   },
 };
 
