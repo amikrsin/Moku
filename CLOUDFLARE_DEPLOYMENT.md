@@ -1,41 +1,50 @@
 # Cloudflare Deployment Guide for Moku
 
-## 🛠️ Root Cause of the Cloudflare Build Failure in the Screenshot
+## 🛠️ Root Cause of the `npm ci` / `EUSAGE` Error
 
-In your build screenshot:
-- **Build command**: `bun run build`
-- **Failure point**: **Installing (3s - Red ❌)**
+In your Cloudflare build logs:
+```text
+Installing project dependencies: npm clean-install --progress=false
+npm error code EUSAGE
+npm error `npm ci` can only install packages when your package.json and package-lock.json are in sync.
+npm error Missing: @tailwindcss/oxide-android-arm64, @esbuild/aix-ppc64, @rollup/rollup-android-arm-eabi from lock file
+```
 
 ### Why It Failed:
-1. **Missing / Incompatible Bun in Cloudflare CI**: The Cloudflare build container was attempting to run `bun install` because of a `bun.lock` file, but standard Cloudflare build environments run **Node.js + NPM** by default (or Bun was not installed/in PATH).
-2. **Workers Build vs Pages**: You are deploying via **Cloudflare Workers Builds** which executes `npx wrangler deploy`.
+When `package-lock.json` is present in the repository, Cloudflare runs `npm clean-install` (`npm ci`). In Tailwind CSS v4 and Rollup, optional native binaries exist for 20+ architectures (macOS, Linux, Windows, Android, etc.). `npm ci` strictly requires every single unused architecture's optional dependency to be present in `package-lock.json`, failing with `EUSAGE`.
 
 ---
 
-## 🚀 How to Fix the Build in Cloudflare Dashboard (2 Easy Steps)
+## 🚀 The 2-Minute Solution: Remove `package-lock.json`
 
-### Step 1: Update the Build Settings in Cloudflare
-In your Cloudflare dashboard for project `Moku`:
-1. Go to **Settings** > **Build & Deployments** (or edit your build configuration).
-2. Change the settings to:
-   - **Build command**: `npm run build` (instead of `bun run build`)
-   - **Deploy command**: `npx wrangler deploy`
-   - **Root directory**: `/`
-   - **Node.js version / Environment Variable**: `NODE_VERSION = 20`
+When `package-lock.json` is **not present** in the repository:
+- Cloudflare automatically falls back to standard **`npm install`** instead of `npm clean-install`.
+- `npm install` dynamically resolves and downloads only the required Linux packages for Cloudflare's build server.
+- The build succeeds cleanly with zero missing architecture errors.
 
----
-
-### Step 2: What We Updated in the Repository
-1. **Added `package-lock.json`**: Generated official npm lockfile so Cloudflare's `npm install` runs smoothly without errors.
-2. **Removed `bun.lock`**: Ensures Cloudflare uses the standard, fully supported `npm` package manager.
-3. **Updated `wrangler.toml`**: Added support for Cloudflare Workers Static Assets (`[assets] directory = "./dist"` with `not_found_handling = "single-page-application"`) so `npx wrangler deploy` publishes your SPA directly to Cloudflare's global edge network.
+### What We Changed:
+1. **Removed `package-lock.json`**: Cloudflare will now run `npm install --progress=false` cleanly.
+2. **Removed `bun.lock`**: Ensures Bun is not invoked.
+3. **Configured `wrangler.toml`**: Single-Page App static assets are routed properly from `./dist`.
 
 ---
 
-## 🌐 Alternative: Cloudflare Pages (Direct Upload / Git)
+## ⚙️ Cloudflare Build Settings Summary
 
-If you prefer Cloudflare Pages instead of Workers:
-- **Framework preset**: `Vite`
-- **Build command**: `npm run build`
-- **Build output directory**: `dist`
-- **Root directory**: `/`
+In your Cloudflare dashboard under **Workers & Pages** > **Moku** > **Settings** > **Build & deployments**:
+
+| Setting | Value |
+| :--- | :--- |
+| **Build command** | `npm run build` |
+| **Deploy command** | `npx wrangler deploy` |
+| **Version command** | `npx wrangler versions upload` |
+| **Root directory** | `/` |
+
+---
+
+## 🔁 Next Step: Push to GitHub & Re-run Build
+
+1. Push your latest commit to GitHub (which removes `package-lock.json`).
+2. Go to Cloudflare **Deployments** tab > Click **Retry** (or trigger a new build).
+3. Cloudflare will run `npm install`, compile the Vite assets to `dist/`, and deploy via `wrangler`.
+
