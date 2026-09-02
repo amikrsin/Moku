@@ -8,61 +8,118 @@ export type Category = 'survival' | 'optional' | 'culture' | 'extra';
 export interface CategoryInfo {
   id: Category;
   name: string;
-  kanji: string;
   subhead: string;
   description: string;
   examples: string;
-  color: string; // Tailwind hex / text class
+  icon: string;
+  color: string;
   bgLight: string;
-  borderColor: string;
 }
 
 export const CATEGORIES: Record<Category, CategoryInfo> = {
   survival: {
     id: 'survival',
-    name: 'Survival',
-    kanji: 'अनिवार्य व्यय',
-    subhead: 'Needs (आवश्यकता)',
+    name: 'Essentials',
+    subhead: 'Needs',
     description: 'Essential expenses to sustain daily life',
-    examples: 'किराना, किराया, बिजली/पानी, दवाइयां, परिवहन',
-    color: '#23211D', // Ink
-    bgLight: 'rgba(35, 33, 29, 0.06)',
-    borderColor: 'rgba(35, 33, 29, 0.3)',
+    examples: 'Groceries, rent, bills, transit, health',
+    icon: '🍔',
+    color: '#176B52',
+    bgLight: 'rgba(23, 107, 82, 0.08)',
   },
   optional: {
     id: 'optional',
-    name: 'Optional',
-    kanji: 'वैकल्पिक व्यय',
-    subhead: 'Wants (इच्छाएं)',
-    description: 'Comforts and non-essential pleasures',
-    examples: 'बाहर खाना, शॉपिंग, सिनेमा, शौक, स्नैक्स',
-    color: '#B5652E', // Clay
+    name: 'Wants',
+    subhead: 'Enjoyment',
+    description: 'Comforts, dining out & leisure pleasures',
+    examples: 'Restaurants, shopping, movies, hobbies, cafe',
+    icon: '✨',
+    color: '#B5652E',
     bgLight: 'rgba(181, 101, 46, 0.08)',
-    borderColor: 'rgba(181, 101, 46, 0.35)',
   },
   culture: {
     id: 'culture',
-    name: 'Culture',
-    kanji: 'ज्ञान व विकास',
-    subhead: 'Growth (संस्कृति)',
-    description: 'Intellectual & spiritual enrichment',
-    examples: 'किताबें, कोर्स, संग्रहालय, कला, कौशल विकास',
-    color: '#35415C', // Indigo
+    name: 'Growth',
+    subhead: 'Learning',
+    description: 'Intellectual, personal & skills enrichment',
+    examples: 'Books, courses, workshops, fitness, music',
+    icon: '📚',
+    color: '#35415C',
     bgLight: 'rgba(53, 65, 92, 0.08)',
-    borderColor: 'rgba(53, 65, 92, 0.35)',
   },
   extra: {
     id: 'extra',
-    name: 'Extra',
-    kanji: 'आकस्मिक व्यय',
-    subhead: 'Unexpected (अतिरिक्त)',
-    description: 'Unplanned expenses & irregular outlays',
-    examples: 'मरम्मत, उपहार, त्योहार/उत्सव, आपातकालीन खर्च',
-    color: '#A8342A', // Hanko red
+    name: 'Unexpected',
+    subhead: 'Unplanned',
+    description: 'Unplanned outlays, sudden repairs & gifts',
+    examples: 'Car repairs, emergency care, urgent gifts',
+    icon: '⚡',
+    color: '#A8342A',
     bgLight: 'rgba(168, 52, 42, 0.08)',
-    borderColor: 'rgba(168, 52, 42, 0.35)',
   },
 };
+
+export interface PlannedSector {
+  id: string;
+  name: string;
+  plannedAmount: number;
+  icon?: string;
+}
+
+export type BudgetSignal = 
+  | 'NOT_STARTED' 
+  | 'ON_TRACK' 
+  | 'PAID' 
+  | 'WATCH' 
+  | 'OVER_PLAN' 
+  | 'UNPLANNED';
+
+export const QUICK_CHIP_SUGGESTIONS: Record<Category, string[]> = {
+  survival: ['Rent', 'Groceries', 'Dairy', 'Medicine', 'Utilities', 'Transit'],
+  optional: ['Eating Out', 'Shopping', 'Entertainment', 'Subscriptions', 'Travel', 'Personal Care'],
+  culture: ['Books', 'Courses', 'Education', 'Skill Development', 'Music', 'Hobbies'],
+  extra: ['Emergency', 'Repair', 'Medical', 'Gift', 'Special Event', 'One-time Expense'],
+};
+
+export const DEFAULT_CATEGORY_SECTORS: Record<Category, { name: string; icon: string; defaultShare: number }[]> = {
+  survival: [
+    { name: 'Rent', icon: '🏠', defaultShare: 0.35 },
+    { name: 'Groceries', icon: '🛒', defaultShare: 0.25 },
+    { name: 'Dairy', icon: '🥛', defaultShare: 0.12 },
+    { name: 'Utilities', icon: '⚡', defaultShare: 0.10 },
+    { name: 'Medicine', icon: '💊', defaultShare: 0.08 },
+    { name: 'Transit', icon: '🚇', defaultShare: 0.10 },
+  ],
+  optional: [
+    { name: 'Eating Out', icon: '🍽️', defaultShare: 0.35 },
+    { name: 'Shopping', icon: '🛍️', defaultShare: 0.30 },
+    { name: 'Entertainment', icon: '🎬', defaultShare: 0.20 },
+    { name: 'Subscriptions', icon: '📱', defaultShare: 0.15 },
+  ],
+  culture: [
+    { name: 'Courses', icon: '💻', defaultShare: 0.50 },
+    { name: 'Books', icon: '📖', defaultShare: 0.20 },
+    { name: 'Hobbies & Sports', icon: '🎨', defaultShare: 0.30 },
+  ],
+  extra: [
+    { name: 'Emergency', icon: '🚨', defaultShare: 0.40 },
+    { name: 'Gifts & Celebrations', icon: '🎁', defaultShare: 0.25 },
+    { name: 'Repairs & Maintenance', icon: '🔧', defaultShare: 0.35 },
+  ],
+};
+
+export interface InboxTransaction {
+  id: string;
+  merchant: string;
+  amount: number;
+  type: 'expense' | 'income' | 'transfer';
+  source: string; // e.g. "UPI · Today · 8:35 PM", "HDFC Bank · 1 Sep"
+  suggestedCategory?: Category;
+  suggestedSectorName?: string;
+  rawText?: string;
+  timestamp: number;
+  status: 'pending' | 'confirmed' | 'dismissed';
+}
 
 export interface BudgetLine {
   id: string;
@@ -80,10 +137,13 @@ export interface CategoryBudgets {
 export interface Plan {
   monthKey: string; // "YYYY-MM"
   income: number; // Question 1: Total available income
+  openingBalance?: number; // Opening balance / carryover
+  otherIncome?: number; // Other income
   savingsTarget: number; // Question 2: Savings target
-  totalExpenses: number; // Question 3: Planned total expenses
+  totalExpenses: number; // Question 3: Planned total spending budget
   improvementNotes: string; // Question 4: One thing to try/improve
   categoryBudgets: CategoryBudgets;
+  plannedSectors?: Record<Category, PlannedSector[]>;
   categoryBudgetLines?: {
     survival?: BudgetLine[];
     optional?: BudgetLine[];
@@ -100,8 +160,10 @@ export interface Expense {
   monthKey: string; // "YYYY-MM"
   amount: number;
   category: Category;
-  budgetLineId?: string; // Optional budget line reference
-  budgetLineName?: string; // Cached budget line name
+  sectorId?: string; // Planned sector reference ID
+  sectorName?: string; // Planned sector name (e.g. "Groceries", "Rent")
+  budgetLineId?: string; // Legacy budget line reference
+  budgetLineName?: string; // Legacy budget line name
   note: string;
   date: string; // ISO datetime string
   createdAt: number;

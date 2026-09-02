@@ -3,11 +3,23 @@
  * Implements TRD §2, §4, §5
  */
 
-import { AppState, Expense, Plan, SavingsEntry, UserProfile } from '../types';
+import { 
+  AppState, 
+  BudgetSignal, 
+  Category, 
+  DEFAULT_CATEGORY_SECTORS, 
+  Expense, 
+  InboxTransaction, 
+  Plan, 
+  PlannedSector, 
+  SavingsEntry, 
+  UserProfile 
+} from '../types';
 
 const STORAGE_KEY_PLANS = 'kakeibo_plans_v1';
 const STORAGE_KEY_EXPENSES = 'kakeibo_expenses_v1';
 const STORAGE_KEY_SAVINGS = 'kakeibo_savings_v1';
+const STORAGE_KEY_INBOX = 'kakeibo_inbox_v1';
 const STORAGE_KEY_USER = 'kakeibo_user_v1';
 const STORAGE_KEY_LAST_SYNC = 'kakeibo_last_sync_v1';
 const STORAGE_KEY_GLOBAL_CURRENCY = 'kakeibo_global_currency_v1';
@@ -78,6 +90,163 @@ export function formatCurrency(amount: number, currencyCode = 'INR'): string {
     const symbol = currencyCode === 'INR' ? '₹' : currencyCode;
     return `${symbol} ${amount.toLocaleString()}`;
   }
+}
+
+export function computeBudgetSignal(plannedAmount: number, actualAmount: number): BudgetSignal {
+  if (plannedAmount === 0 && actualAmount > 0) return 'UNPLANNED';
+  if (actualAmount === 0) return 'NOT_STARTED';
+  if (actualAmount === plannedAmount) return 'PAID';
+  if (actualAmount > plannedAmount) return 'OVER_PLAN';
+  if (plannedAmount > 0 && actualAmount / plannedAmount >= 0.8) return 'WATCH';
+  return 'ON_TRACK';
+}
+
+export function getDefaultPlannedSectors(category: Category, totalCategoryBudget: number): PlannedSector[] {
+  const defaults = DEFAULT_CATEGORY_SECTORS[category] || [];
+  return defaults.map((d, index) => {
+    // Distribute rounded amounts
+    const planned = Math.round((totalCategoryBudget * d.defaultShare) / 100) * 100;
+    return {
+      id: `sector-${category}-${index + 1}`,
+      name: d.name,
+      plannedAmount: planned,
+      icon: d.icon,
+    };
+  });
+}
+
+export interface SectorCalculationItem {
+  id: string;
+  name: string;
+  icon?: string;
+  plannedAmount: number;
+  actualAmount: number;
+  remainingAmount: number;
+  variance: number; // actual - planned
+  status: BudgetSignal;
+  percentage: number;
+  isUnplanned?: boolean;
+}
+
+export function computeCategorySectorBreakdown(
+  plan: Plan | null,
+  expenses: Expense[],
+  category: Category,
+  monthKey: string
+): {
+  sectors: SectorCalculationItem[];
+  totalPlanned: number;
+  totalActual: number;
+  remaining: number;
+  variance: number;
+  overallStatus: BudgetSignal;
+} {
+  const activeExpenses = expenses.filter(
+    (e) => e.monthKey === monthKey && e.category === category && !e.deleted
+  );
+
+  const totalActual = activeExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalPlanned = plan?.categoryBudgets?.[category] || 0;
+
+  // Retrieve planned sectors or fallback to defaults if planned
+  let plannedSectors: PlannedSector[] = plan?.plannedSectors?.[category] || [];
+  if (plannedSectors.length === 0 && totalPlanned > 0) {
+    plannedSectors = getDefaultPlannedSectors(category, totalPlanned);
+  }
+
+  const sectorMap = new Map<string, SectorCalculationItem>();
+
+  // Initialize planned sectors
+  plannedSectors.forEach((s) => {
+    sectorMap.set(s.name.toLowerCase().trim(), {
+      id: s.id,
+      name: s.name,
+      icon: s.icon,
+      plannedAmount: s.plannedAmount,
+      actualAmount: 0,
+      remainingAmount: s.plannedAmount,
+      variance: -s.plannedAmount,
+      status: 'NOT_STARTED',
+      percentage: 0,
+    });
+  });
+
+  // Track matched vs unmatched expense amounts
+  activeExpenses.forEach((exp) => {
+    const rawName = (exp.sectorName || exp.note || '').toLowerCase().trim();
+    
+    // Find best match in planned sectors
+    let matchedKey: string | null = null;
+    for (const [key] of sectorMap) {
+      if (rawName.includes(key) || key.includes(rawName)) {
+        matchedKey = key;
+        break;
+      }
+    }
+
+    if (matchedKey && sectorMap.has(matchedKey)) {
+      const item = sectorMap.get(matchedKey)!;
+      item.actualAmount += exp.amount;
+    } else {
+      // Unplanned sector entry
+      const cleanName = exp.sectorName || exp.note || 'General spending';
+      const unKey = `unplanned-${cleanName.toLowerCase()}`;
+      if (sectorMap.has(unKey)) {
+        sectorMap.get(unKey)!.actualAmount += exp.amount;
+      } else {
+        sectorMap.set(unKey, {
+          id: exp.sectorId || generateUUID(),
+          name: cleanName,
+          icon: '⚡',
+          plannedAmount: 0,
+          actualAmount: exp.amount,
+          remainingAmount: -exp.amount,
+          variance: exp.amount,
+          status: 'UNPLANNED',
+          percentage: 100,
+          isUnplanned: true,
+        });
+      }
+    }
+  });
+
+  // Finalize stats per sector
+  const sectorsList: SectorCalculationItem[] = Array.from(sectorMap.values()).map((item) => {
+    const remaining = Math.max(0, item.plannedAmount - item.actualAmount);
+    const variance = item.actualAmount - item.plannedAmount;
+    const status = computeBudgetSignal(item.plannedAmount, item.actualAmount);
+    const percentage = item.plannedAmount > 0 
+      ? Math.round((item.actualAmount / item.plannedAmount) * 100) 
+      : 100;
+
+    return {
+      ...item,
+      remainingAmount: remaining,
+      variance,
+      status,
+      percentage,
+    };
+  });
+
+  // Sort: Over plan first, then in progress, then unplanned, then not started
+  sectorsList.sort((a, b) => {
+    if (a.status === 'OVER_PLAN' && b.status !== 'OVER_PLAN') return -1;
+    if (b.status === 'OVER_PLAN' && a.status !== 'OVER_PLAN') return 1;
+    return b.actualAmount - a.actualAmount;
+  });
+
+  const remaining = Math.max(0, totalPlanned - totalActual);
+  const variance = totalActual - totalPlanned;
+  const overallStatus = computeBudgetSignal(totalPlanned, totalActual);
+
+  return {
+    sectors: sectorsList,
+    totalPlanned,
+    totalActual,
+    remaining,
+    variance,
+    overallStatus,
+  };
 }
 
 export function generateUUID(): string {
@@ -445,6 +614,103 @@ class StorageManager {
 
     this.saveLocalState(plans, expenses, newSavings);
     this.triggerSync();
+  }
+
+  // Transaction Inbox (MOKU 2.0 Core Feature)
+  public getInboxTransactions(): InboxTransaction[] {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_INBOX);
+      if (raw) {
+        return JSON.parse(raw);
+      }
+      // Initial seed inbox items
+      const seedInbox: InboxTransaction[] = [
+        {
+          id: 'inbox-1',
+          merchant: 'Zomato',
+          amount: 850,
+          type: 'expense',
+          source: 'UPI · Today · 8:35 PM',
+          suggestedCategory: 'optional',
+          timestamp: Date.now() - 3600000 * 2,
+          status: 'pending',
+        },
+        {
+          id: 'inbox-2',
+          merchant: 'Groceries & Provisions',
+          amount: 1200,
+          type: 'expense',
+          source: 'UPI · Today · 12:10 PM',
+          suggestedCategory: 'survival',
+          timestamp: Date.now() - 3600000 * 7,
+          status: 'pending',
+        },
+        {
+          id: 'inbox-3',
+          merchant: 'Salary Credited',
+          amount: 50000,
+          type: 'income',
+          source: 'HDFC Bank · 1 Sep',
+          timestamp: Date.now() - 86400000,
+          status: 'pending',
+        },
+      ];
+      this.saveInboxTransactions(seedInbox);
+      return seedInbox;
+    } catch {
+      return [];
+    }
+  }
+
+  public saveInboxTransactions(items: InboxTransaction[]) {
+    try {
+      localStorage.setItem(STORAGE_KEY_INBOX, JSON.stringify(items));
+      this.notify();
+    } catch (e) {
+      console.error('Failed saving inbox:', e);
+    }
+  }
+
+  public addInboxTransaction(item: Omit<InboxTransaction, 'id' | 'timestamp' | 'status'>) {
+    const items = this.getInboxTransactions();
+    const newItem: InboxTransaction = {
+      ...item,
+      id: generateUUID(),
+      timestamp: Date.now(),
+      status: 'pending',
+    };
+    this.saveInboxTransactions([newItem, ...items]);
+  }
+
+  public dismissInboxTransaction(id: string) {
+    const items = this.getInboxTransactions();
+    const updated = items.map(t => t.id === id ? { ...t, status: 'dismissed' as const } : t);
+    this.saveInboxTransactions(updated);
+  }
+
+  public confirmInboxTransaction(id: string, category: Category, note?: string, sectorName?: string, sectorId?: string) {
+    const items = this.getInboxTransactions();
+    const target = items.find(t => t.id === id);
+    if (!target) return;
+
+    // Convert to verified expense
+    const newExpense: Expense = {
+      id: generateUUID(),
+      monthKey: getCurrentMonthKey(),
+      amount: target.amount,
+      category,
+      sectorId,
+      sectorName: sectorName || target.suggestedSectorName,
+      note: note || target.merchant,
+      date: new Date().toISOString(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      deleted: false,
+    };
+
+    this.saveExpense(newExpense);
+    const updated = items.map(t => t.id === id ? { ...t, status: 'confirmed' as const } : t);
+    this.saveInboxTransactions(updated);
   }
 
   // Background Sync Engine (TRD §5)

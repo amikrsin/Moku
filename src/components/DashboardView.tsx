@@ -27,7 +27,10 @@ import {
   Copy,
   Plus,
   Check,
-  ArrowRight
+  ArrowRight,
+  Building2,
+  Wallet,
+  HelpCircle
 } from 'lucide-react';
 import { ExpenseFlowChart } from './ExpenseFlowChart';
 
@@ -214,13 +217,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     );
   }
 
-  const destinationLabels: Record<string, string> = {
-    mutual_fund: 'Mutual Fund / SIP / Stocks',
-    fixed_deposit: 'Fixed Deposit (FD)',
-    recurring_deposit: 'Recurring Deposit (RD)',
-    savings_account: 'High-Yield Savings',
-    cash: 'Physical Cash / Envelope',
-    other: 'PPF / Gold / Bonds',
+  const destinationMeta: Record<string, { label: string; icon: React.ReactNode }> = {
+    mutual_fund: {
+      label: 'Mutual Fund / SIP / Stocks',
+      icon: <TrendingUp className="w-3.5 h-3.5 text-[#35415C]" />,
+    },
+    fixed_deposit: {
+      label: 'Fixed Deposit (FD)',
+      icon: <Landmark className="w-3.5 h-3.5 text-[#5C6E4E]" />,
+    },
+    recurring_deposit: {
+      label: 'Recurring Deposit (RD)',
+      icon: <Building2 className="w-3.5 h-3.5 text-[#565248]" />,
+    },
+    savings_account: {
+      label: 'High-Yield Savings',
+      icon: <PiggyBank className="w-3.5 h-3.5 text-[#B5652E]" />,
+    },
+    cash: {
+      label: 'Cash Reserve',
+      icon: <Wallet className="w-3.5 h-3.5 text-[#23211D]" />,
+    },
+    other: {
+      label: 'PPF / Gold / Other',
+      icon: <HelpCircle className="w-3.5 h-3.5 text-[#A8342A]" />,
+    },
   };
 
   return (
@@ -416,9 +437,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* List of Logged Savings Entries for this month */}
         {activeSavings.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-[#565248]/15 space-y-2">
-            <div className="text-[11px] font-serif uppercase tracking-wider text-[#565248] font-bold">
-              Active Savings Log This Month:
+          <div className="mt-3.5 pt-3.5 border-t border-[#565248]/15 space-y-2.5">
+            <div className="flex items-center justify-between text-[11px] font-serif uppercase tracking-wider text-[#565248] font-bold">
+              <span>Active Savings Log ({activeSavings.length}):</span>
+              <span className="text-[#5C6E4E] font-tabular">
+                Total: +{formatCurrency(loggedSavings, currency)}
+              </span>
             </div>
             <div className="space-y-2">
               {activeSavings.map((entry) => {
@@ -429,42 +453,48 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 const formattedTime = dateObj && !isNaN(dateObj.getTime())
                   ? dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
                   : '';
-                const destTitle = destinationLabels[entry.destination] || entry.destination;
+                const meta = destinationMeta[entry.destination] || {
+                  label: entry.destination,
+                  icon: <Landmark className="w-3.5 h-3.5 text-[#5C6E4E]" />,
+                };
+                const destTitle = entry.destinationCustom || meta.label;
 
                 return (
                   <div
                     key={entry.id}
-                    className="bg-[#EDE8DA]/80 border border-[#565248]/20 rounded-lg p-3 hover:bg-[#EDE8DA] transition-all space-y-1.5 shadow-2xs"
+                    className="bg-[#EDE8DA]/95 border border-[#565248]/20 rounded-xl p-3 sm:p-3.5 hover:border-[#565248]/35 transition-all shadow-2xs space-y-2"
                   >
-                    {/* Top Row: Destination Pill + Expected Return Tag (Left), Saved Amount Pill (Right) */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
-                        {/* Destination Pill */}
-                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md text-[11px] font-serif font-bold text-[#EDE8DA] bg-[#5C6E4E] shadow-2xs">
-                          <Landmark className="w-3 h-3" />
-                          <span>{entry.destinationCustom || destTitle}</span>
-                        </span>
-
-                        {/* Expected Return Pill */}
-                        {entry.committedReturn && (
-                          <span className="text-[10px] bg-[#E5DFCE] border border-[#5C6E4E]/30 text-[#5C6E4E] px-1.5 py-0.5 rounded-md font-serif font-semibold font-tabular">
-                            📈 {entry.committedReturn}
+                    {/* Primary Row: Vehicle + CAGR on Left, Single-Line Price Badge on Right */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center space-x-2.5 min-w-0 flex-wrap gap-y-1">
+                        <div className="w-7 h-7 rounded-lg bg-[#E5DFCE] border border-[#565248]/20 flex items-center justify-center shrink-0 shadow-2xs">
+                          {meta.icon}
+                        </div>
+                        <div className="flex items-center space-x-2 flex-wrap gap-y-0.5 min-w-0">
+                          <span className="font-serif font-bold text-xs sm:text-sm text-[#23211D] truncate">
+                            {destTitle}
                           </span>
-                        )}
+                          {entry.committedReturn && (
+                            <span className="text-[10px] bg-[#5C6E4E]/10 border border-[#5C6E4E]/25 text-[#5C6E4E] px-1.5 py-0.5 rounded-md font-serif font-semibold font-tabular whitespace-nowrap">
+                              📈 {entry.committedReturn}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Saved Amount Pill on Top Right with Delete Action */}
-                      <div className="flex items-center space-x-2">
-                        <div className="bg-[#E5DFCE] border border-[#565248]/25 px-2.5 py-0.5 rounded-md shadow-2xs font-tabular">
+                      <div className="flex items-center space-x-2 shrink-0">
+                        <div className="inline-flex items-center space-x-1 bg-[#5C6E4E]/10 border border-[#5C6E4E]/30 px-3 py-1 rounded-lg shadow-2xs font-tabular whitespace-nowrap">
+                          <span className="text-xs font-bold text-[#5C6E4E]/70 font-sans">+</span>
                           <span className="font-serif font-bold text-sm sm:text-base text-[#5C6E4E]">
-                            +{formatCurrency(entry.amount, currency)}
+                            {formatCurrency(entry.amount, currency)}
                           </span>
                         </div>
                         {onDeleteSavings && (
                           <button
                             type="button"
                             onClick={() => onDeleteSavings(entry.id)}
-                            className="p-1 text-[#565248]/50 hover:text-[#A8342A] hover:bg-[#E5DFCE] rounded-xs transition-colors cursor-pointer"
+                            className="p-1.5 text-[#565248]/40 hover:text-[#A8342A] hover:bg-[#E5DFCE] rounded-md transition-colors cursor-pointer shrink-0"
                             title="Delete savings entry"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -473,13 +503,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Bottom Row: Description / Note on Left, Date & Time on Right */}
-                    <div className="flex items-center justify-between text-xs text-[#565248] pt-0.5">
-                      <span className="text-xs sm:text-sm font-medium text-[#23211D] truncate max-w-[70%]">
-                        {entry.notes || <span className="italic text-[#565248]">Deposit to {entry.destinationCustom || destTitle}</span>}
+                    {/* Secondary Row: Notes on Left, Date & Time on Right */}
+                    <div className="flex items-center justify-between text-xs text-[#565248] pt-1.5 border-t border-[#565248]/10 gap-2">
+                      <span className="text-xs text-[#565248] italic truncate max-w-[70%]">
+                        {entry.notes || `Deposit to ${destTitle}`}
                       </span>
 
-                      <span className="text-[11px] text-[#565248] font-tabular whitespace-nowrap">
+                      <span className="text-[11px] text-[#565248]/80 font-tabular whitespace-nowrap shrink-0">
                         {formattedDate}{formattedTime ? ` • ${formattedTime}` : ''}
                       </span>
                     </div>

@@ -799,26 +799,26 @@ export const MonthlySetupView: React.FC<MonthlySetupViewProps> = ({
         </div>
 
         {/* Submit Actions */}
-        <div className="flex items-center justify-between pt-2">
-          <div className="text-xs text-[#565248] italic flex items-center space-x-1">
-            <Sparkles className="w-3.5 h-3.5 text-[#A8342A]" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pt-4 border-t border-[#565248]/15">
+          <div className="text-xs text-[#565248] italic flex items-center space-x-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#A8342A] shrink-0" />
             <span>{t.setupZenTip}</span>
           </div>
 
           <button
             id="save-plan-btn"
             type="submit"
-            className="flex items-center space-x-2 bg-[#A8342A] hover:bg-[#8F2B22] text-[#EDE8DA] font-serif font-bold px-6 py-2.5 rounded-md shadow-xs transition-all cursor-pointer text-sm sm:text-base active:scale-98"
+            className="inline-flex items-center justify-center space-x-2 bg-[#A8342A] hover:bg-[#922D24] text-[#EDE8DA] font-serif font-bold px-7 py-3 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer text-sm sm:text-base active:scale-[0.99] whitespace-nowrap shrink-0 border border-[#8F2B22]/30"
           >
             {hasSaved ? (
               <>
-                <Check className="w-4 h-4" />
-                <span>{t.setupSavedBtn}</span>
+                <Check className="w-4 h-4 text-[#EDE8DA]" />
+                <span className="whitespace-nowrap">{t.setupSavedBtn}</span>
               </>
             ) : (
               <>
-                <span>{t.setupSaveBtn}</span>
-                <ArrowRight className="w-4 h-4" />
+                <span className="whitespace-nowrap">{t.setupSaveBtn}</span>
+                <ArrowRight className="w-4 h-4 text-[#EDE8DA]" />
               </>
             )}
           </button>

@@ -7,9 +7,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   AppState, 
   Expense, 
+  InboxTransaction, 
   Plan, 
   SavingsEntry, 
-  UserProfile 
+  UserProfile,
+  Category 
 } from './types';
 import { 
   storage, 
@@ -17,82 +19,83 @@ import {
   getGlobalCurrency,
   setGlobalCurrency
 } from './lib/storage';
-import { 
-  NotebookLayout, 
-  NavTab 
-} from './components/NotebookLayout';
-import { DashboardView } from './components/DashboardView';
-import { RecordExpenseView } from './components/RecordExpenseView';
-import { LedgerView } from './components/LedgerView';
-import { ReviewView } from './components/ReviewView';
-import { MonthlySetupView } from './components/MonthlySetupView';
+import { BottomNavigation, MainTab } from './components/BottomNavigation';
+import { HomeScreen } from './components/HomeScreen';
+import { InboxScreen } from './components/InboxScreen';
+import { ReviewScreen } from './components/ReviewScreen';
+import { ProfileScreen } from './components/ProfileScreen';
+import { QuickAddSheet } from './components/QuickAddSheet';
+import { MonthlyPlanSheet } from './components/MonthlyPlanSheet';
+import { SavingsModal } from './components/SavingsModal';
 import { AuthModal } from './components/AuthModal';
 import { ExportModal } from './components/ExportModal';
 
 export default function App() {
-  const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
+  const [currentTab, setCurrentTab] = useState<MainTab>('home');
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonthKey());
   const [appState, setAppState] = useState<AppState>(() => storage.getLocalState());
+  const [inboxItems, setInboxItems] = useState<InboxTransaction[]>(() => storage.getInboxTransactions());
   const [user, setUser] = useState<UserProfile>(() => storage.getUser());
-  const [isOnline, setIsOnline] = useState<boolean>(storage.getOnlineStatus());
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('moku_theme') === 'dark';
+    }
+    return false;
+  });
+
+  // Modals & Bottom Sheets
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState<boolean>(false);
+  const [isPlanSheetOpen, setIsPlanSheetOpen] = useState<boolean>(false);
+  const [isSavingsModalOpen, setIsSavingsModalOpen] = useState<boolean>(false);
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [isExportOpen, setIsExportOpen] = useState<boolean>(false);
-  const [recentlyAddedExpenseId, setRecentlyAddedExpenseId] = useState<string | null>(null);
   const [activeCurrency, setActiveCurrency] = useState<string>(() => getGlobalCurrency());
-  const [copySourcePlan, setCopySourcePlan] = useState<Plan | null>(null);
 
-  // Subscribe to storage changes & online status
+  // Apply dark mode class to html element
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('moku_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('moku_theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  // Subscribe to storage updates
   useEffect(() => {
     const unsubscribe = storage.subscribe(() => {
       setAppState(storage.getLocalState());
+      setInboxItems(storage.getInboxTransactions());
       setUser(storage.getUser());
-      setIsOnline(storage.getOnlineStatus());
     });
 
-    // Run initial background sync
     storage.triggerSync();
-
-    return () => {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
-  // Find plan for currently selected month
-  const rawPlan = appState.plans.find((p) => p.monthKey === selectedMonth) || null;
-  const currentPlan = rawPlan ? { ...rawPlan, currency: activeCurrency } : null;
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode((prev) => !prev);
+  }, []);
 
   const handleChangeCurrency = useCallback((newCurrency: string) => {
     setActiveCurrency(newCurrency);
     setGlobalCurrency(newCurrency);
 
-    // Update existing plans in storage to the new currency
     const { plans, expenses, savingsEntries } = storage.getLocalState();
-    const updatedPlans = plans.map(p => ({ ...p, currency: newCurrency }));
+    const updatedPlans = plans.map((p) => ({ ...p, currency: newCurrency }));
     localStorage.setItem('kakeibo_plans_v1', JSON.stringify(updatedPlans));
     setAppState({ plans: updatedPlans, expenses, savingsEntries });
   }, []);
 
-  // Auto-switch to setup if user lands on dashboard for a month with no plan and clicks start
   const handleSavePlan = useCallback((newPlan: Plan) => {
     const planWithCurrency = { ...newPlan, currency: activeCurrency };
     storage.savePlan(planWithCurrency);
     setAppState(storage.getLocalState());
-    setCurrentTab('dashboard');
   }, [activeCurrency]);
 
   const handleSaveExpense = useCallback((newExpense: Expense) => {
     storage.saveExpense(newExpense);
-    setAppState(storage.getLocalState());
-    setRecentlyAddedExpenseId(newExpense.id);
-  }, []);
-
-  const handleDeleteExpense = useCallback((id: string) => {
-    storage.softDeleteExpense(id);
-    setAppState(storage.getLocalState());
-  }, []);
-
-  const handleRestoreExpense = useCallback((id: string) => {
-    storage.restoreExpense(id);
     setAppState(storage.getLocalState());
   }, []);
 
@@ -101,112 +104,172 @@ export default function App() {
     setAppState(storage.getLocalState());
   }, []);
 
-  const handleDeleteSavings = useCallback((id: string) => {
-    storage.softDeleteSavingsEntry(id);
+  const handleConfirmInboxItem = useCallback((
+    id: string, 
+    category: Category, 
+    note?: string,
+    sectorId?: string,
+    sectorName?: string
+  ) => {
+    storage.confirmInboxTransaction(id, category, note, sectorId, sectorName);
+    setInboxItems(storage.getInboxTransactions());
     setAppState(storage.getLocalState());
   }, []);
 
+  const handleDismissInboxItem = useCallback((id: string) => {
+    storage.dismissInboxTransaction(id);
+    setInboxItems(storage.getInboxTransactions());
+  }, []);
+
+  const handleAddIncomingItem = useCallback((item: Omit<InboxTransaction, 'id' | 'timestamp' | 'status'>) => {
+    storage.addInboxTransaction(item);
+    setInboxItems(storage.getInboxTransactions());
+  }, []);
+
+  const handleSaveReflection = useCallback((reflectionText: string) => {
+    const current = appState.plans.find((p) => p.monthKey === selectedMonth);
+    if (current) {
+      storage.savePlan({ ...current, reflection: reflectionText, updatedAt: Date.now() });
+    } else {
+      const defaultPlan: Plan = {
+        monthKey: selectedMonth,
+        income: 50000,
+        savingsTarget: 10000,
+        totalExpenses: 40000,
+        improvementNotes: '',
+        categoryBudgets: {
+          survival: 20000,
+          optional: 10000,
+          culture: 5000,
+          extra: 5000,
+        },
+        currency: activeCurrency,
+        reflection: reflectionText,
+        updatedAt: Date.now(),
+      };
+      storage.savePlan(defaultPlan);
+    }
+    setAppState(storage.getLocalState());
+  }, [appState.plans, selectedMonth, activeCurrency]);
+
+  const currentPlan = appState.plans.find((p) => p.monthKey === selectedMonth) || null;
+  const pendingInboxCount = inboxItems.filter((i) => i.status === 'pending').length;
+
   return (
-    <NotebookLayout
-      currentTab={currentTab}
-      onSelectTab={setCurrentTab}
-      selectedMonth={selectedMonth}
-      onChangeMonth={setSelectedMonth}
-      user={user}
-      onOpenAuth={() => setIsAuthOpen(true)}
-      onOpenExport={() => setIsExportOpen(true)}
-      isOnline={isOnline}
-      currency={activeCurrency}
-      onChangeCurrency={handleChangeCurrency}
-    >
-      {/* View Switcher */}
-      {currentTab === 'dashboard' && (
-        <DashboardView
-          monthKey={selectedMonth}
-          plan={currentPlan}
-          expenses={appState.expenses}
-          savingsEntries={appState.savingsEntries || []}
-          allPlans={appState.plans}
-          onSaveExpense={handleSaveExpense}
-          onSaveSavings={handleSaveSavings}
-          onDeleteSavings={handleDeleteSavings}
-          onRecordExpense={() => setCurrentTab('record')}
-          onOpenLedger={() => setCurrentTab('ledger')}
-          onOpenSetup={() => {
-            setCopySourcePlan(null);
-            setCurrentTab('setup');
-          }}
-          onOpenSetupWithCopy={(sourcePlan) => {
-            setCopySourcePlan(sourcePlan);
-            setCurrentTab('setup');
-          }}
-          onOpenReview={() => setCurrentTab('review')}
-          recentlyAddedId={recentlyAddedExpenseId}
-        />
-      )}
+    <div className="min-h-screen bg-[#E8ECE8] dark:bg-[#0E100E] text-[#1A1C1A] dark:text-[#E3E5E1] flex justify-center selection:bg-[#176B52]/20 sm:py-6">
+      {/* Android Device Canvas */}
+      <main className="w-full max-w-md min-h-screen sm:min-h-[860px] bg-[#F7F8F7] dark:bg-[#121412] relative overflow-x-hidden sm:rounded-[36px] sm:shadow-[0_25px_80px_rgba(0,0,0,0.18)] flex flex-col justify-between border border-[#DDE2DD]/50 dark:border-[#343B35]">
+        {/* Main Content Area */}
+        <div className="px-5 pt-4 pb-28 flex-1">
+          {currentTab === 'home' && (
+            <HomeScreen
+              monthKey={selectedMonth}
+              onChangeMonth={setSelectedMonth}
+              plan={currentPlan}
+              expenses={appState.expenses}
+              savingsEntries={appState.savingsEntries || []}
+              allPlans={appState.plans}
+              user={user}
+              currency={activeCurrency}
+              isDarkMode={isDarkMode}
+              onToggleDarkMode={toggleDarkMode}
+              onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+              onOpenInbox={() => setCurrentTab('inbox')}
+              onOpenPlanSetup={() => setIsPlanSheetOpen(true)}
+              onOpenSavingsModal={() => setIsSavingsModalOpen(true)}
+              inboxPendingCount={pendingInboxCount}
+            />
+          )}
 
-      {currentTab === 'record' && (
-        <RecordExpenseView
-          monthKey={selectedMonth}
-          plan={currentPlan}
-          onSaveExpense={handleSaveExpense}
-          onBackToDashboard={() => setCurrentTab('dashboard')}
-        />
-      )}
+          {currentTab === 'inbox' && (
+            <InboxScreen
+              inboxItems={inboxItems}
+              onConfirmItem={handleConfirmInboxItem}
+              onDismissItem={handleDismissInboxItem}
+              onAddIncomingItem={handleAddIncomingItem}
+              currency={activeCurrency}
+              currentPlan={currentPlan}
+            />
+          )}
 
-      {currentTab === 'ledger' && (
-        <LedgerView
-          monthKey={selectedMonth}
-          plan={currentPlan}
-          expenses={appState.expenses}
-          onDeleteExpense={handleDeleteExpense}
-          onRestoreExpense={handleRestoreExpense}
-          onRecordExpense={() => setCurrentTab('record')}
-        />
-      )}
+          {currentTab === 'review' && (
+            <ReviewScreen
+              monthKey={selectedMonth}
+              plan={currentPlan}
+              expenses={appState.expenses}
+              onSaveReflection={handleSaveReflection}
+              currency={activeCurrency}
+            />
+          )}
 
-      {currentTab === 'review' && (
-        <ReviewView
-          monthKey={selectedMonth}
-          plan={currentPlan}
-          expenses={appState.expenses}
-          onSavePlan={handleSavePlan}
-          onOpenLedger={() => setCurrentTab('ledger')}
-          onOpenSetup={() => {
-            setCopySourcePlan(null);
-            setCurrentTab('setup');
-          }}
-        />
-      )}
+          {currentTab === 'profile' && (
+            <ProfileScreen
+              user={user}
+              currency={activeCurrency}
+              onChangeCurrency={handleChangeCurrency}
+              isDarkMode={isDarkMode}
+              onToggleDarkMode={toggleDarkMode}
+              onOpenMonthlyPlan={() => setIsPlanSheetOpen(true)}
+              onOpenSavingsPortfolio={() => setIsSavingsModalOpen(true)}
+              onOpenAuthModal={() => setIsAuthOpen(true)}
+              onOpenExportModal={() => setIsExportOpen(true)}
+              plan={currentPlan}
+              monthKey={selectedMonth}
+            />
+          )}
+        </div>
 
-      {currentTab === 'setup' && (
-        <MonthlySetupView
-          monthKey={selectedMonth}
-          existingPlan={currentPlan}
-          allPlans={appState.plans}
-          initialCopySourcePlan={copySourcePlan}
-          currency={activeCurrency}
-          onSavePlan={handleSavePlan}
-          onDone={() => {
-            setCopySourcePlan(null);
-            setCurrentTab('dashboard');
-          }}
+        {/* Bottom Navigation */}
+        <BottomNavigation
+          currentTab={currentTab}
+          onSelectTab={setCurrentTab}
+          onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+          inboxCount={pendingInboxCount}
         />
-      )}
+      </main>
 
-      {/* Auth / Sync Modal */}
+      {/* Quick Add Expense Bottom Sheet */}
+      <QuickAddSheet
+        isOpen={isQuickAddOpen}
+        onClose={() => setIsQuickAddOpen(false)}
+        onSaveExpense={handleSaveExpense}
+        currency={activeCurrency}
+        monthKey={selectedMonth}
+        currentPlan={currentPlan}
+      />
+
+      {/* Monthly Planning Flow Sheet */}
+      <MonthlyPlanSheet
+        isOpen={isPlanSheetOpen}
+        onClose={() => setIsPlanSheetOpen(false)}
+        monthKey={selectedMonth}
+        existingPlan={currentPlan}
+        onSavePlan={handleSavePlan}
+        currency={activeCurrency}
+      />
+
+      {/* Savings Deposit Modal */}
+      <SavingsModal
+        isOpen={isSavingsModalOpen}
+        onClose={() => setIsSavingsModalOpen(false)}
+        onSaveSavings={handleSaveSavings}
+        currency={activeCurrency}
+        selectedMonth={selectedMonth}
+      />
+
+      {/* Cloud Sync & Auth Modal */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
         user={user}
         currency={activeCurrency}
-        onUserChanged={(updatedUser) => {
-          setUser(updatedUser);
-          storage.setUser(updatedUser);
+        onUserChanged={(updated) => {
+          setUser(updated);
+          storage.setUser(updated);
         }}
       />
 
-      {/* Export Ledger Modal */}
+      {/* Export & Data Modal */}
       <ExportModal
         isOpen={isExportOpen}
         onClose={() => setIsExportOpen(false)}
@@ -215,6 +278,6 @@ export default function App() {
         expenses={appState.expenses}
         currency={activeCurrency}
       />
-    </NotebookLayout>
+    </div>
   );
 }
