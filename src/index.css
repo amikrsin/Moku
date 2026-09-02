@@ -2,46 +2,127 @@
 
 @layer base {
   :root {
-    --background: #F7F8F7;
-    --surface: #FFFFFF;
-    --surface-secondary: #EEF1EE;
-    --primary: #176B52;
-    --primary-container: #D8F3E7;
-    --text-primary: #1A1C1A;
-    --text-secondary: #6E736F;
-    --outline: #DDE2DD;
-    --warning: #B7791F;
-    --error: #BA1A1A;
+    /* Base MOKU Design System Tokens - Light Mode */
+    --moku-primary: #176B52;
+    --moku-primary-hover: #125843;
+    --moku-primary-container: #D8F3E7;
+    --moku-primary-container-text: #176B52;
+    
+    --moku-background: #F7F8F7;
+    --moku-surface: #FFFFFF;
+    --moku-surface-secondary: #EEF1EE;
+    --moku-surface-tertiary: #E3E7E3;
+    
+    --moku-text-primary: #1A1C1A;
+    --moku-text-secondary: #6E736F;
+    --moku-text-tertiary: #9CA39E;
+    
+    --moku-outline: #DDE2DD;
+    --moku-outline-variant: #E8ECE8;
+    
+    --moku-success: #1B7A43;
+    --moku-success-container: #DCFCE7;
+    --moku-success-text: #14532D;
+    
+    --moku-warning: #B45309;
+    --moku-warning-container: #FEF3C7;
+    --moku-warning-text: #78350F;
+    
+    --moku-danger: #BA1A1A;
+    --moku-danger-container: #FEE2E2;
+    --moku-danger-text: #7F1D1D;
+    
+    --moku-unplanned: #6D28D9;
+    --moku-unplanned-container: #EDE9FE;
+    --moku-unplanned-text: #4C1D95;
+
+    /* Kakeibo Categories */
+    --moku-cat-essentials: #176B52;
+    --moku-cat-essentials-bg: #EAF7F1;
+    --moku-cat-wants: #B5652E;
+    --moku-cat-wants-bg: #FDF3EB;
+    --moku-cat-growth: #35415C;
+    --moku-cat-growth-bg: #EEF1F8;
+    --moku-cat-unexpected: #A8342A;
+    --moku-cat-unexpected-bg: #FDEEEC;
   }
 
   .dark {
-    --background: #121412;
-    --surface: #1B1E1B;
-    --surface-secondary: #252925;
-    --primary: #82D9B4;
-    --primary-container: #214C3D;
-    --text-primary: #E3E5E1;
-    --text-secondary: #C1C7C0;
-    --outline: #414842;
+    /* Base MOKU Design System Tokens - Dark Mode */
+    --moku-primary: #82D9B4;
+    --moku-primary-hover: #6ec29e;
+    --moku-primary-container: #214C3D;
+    --moku-primary-container-text: #82D9B4;
+    
+    --moku-background: #121412;
+    --moku-surface: #1B1E1B;
+    --moku-surface-secondary: #252925;
+    --moku-surface-tertiary: #2E342E;
+    
+    --moku-text-primary: #E3E5E1;
+    --moku-text-secondary: #A6ADA6;
+    --moku-text-tertiary: #6E736F;
+    
+    --moku-outline: #383F38;
+    --moku-outline-variant: #282E28;
+    
+    --moku-success: #4ADE80;
+    --moku-success-container: #14532D;
+    --moku-success-text: #86EFAC;
+    
+    --moku-warning: #FBBF24;
+    --moku-warning-container: #78350F;
+    --moku-warning-text: #FDE68A;
+    
+    --moku-danger: #F87171;
+    --moku-danger-container: #7F1D1D;
+    --moku-danger-text: #FECACA;
+    
+    --moku-unplanned: #A78BFA;
+    --moku-unplanned-container: #4C1D95;
+    --moku-unplanned-text: #DDD6FE;
+
+    /* Kakeibo Categories Dark */
+    --moku-cat-essentials: #82D9B4;
+    --moku-cat-essentials-bg: #1C382E;
+    --moku-cat-wants: #FBA974;
+    --moku-cat-wants-bg: #3B271A;
+    --moku-cat-growth: #A5B6E2;
+    --moku-cat-growth-bg: #21293B;
+    --moku-cat-unexpected: #FF897D;
+    --moku-cat-unexpected-bg: #3D1E1E;
   }
 
   body {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    color: var(--text-primary);
-    background-color: var(--background);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--moku-text-primary);
+    background-color: var(--moku-background);
     -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  input, textarea {
+    user-select: text;
   }
 
   .font-tabular {
     font-feature-settings: "tnum" 1;
     font-variant-numeric: tabular-nums;
   }
+
+  /* Safe area support for notched Android & iOS devices */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -54,5 +135,5 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(110, 115, 111, 0.4);
+  background: rgba(110, 115, 111, 0.45);
 }

@@ -17,6 +17,7 @@ import {
   PinSecurityConfig
 } from '../types';
 import { getDefaultPinConfig } from './security';
+import { getIdToken } from './firebase';
 
 const STORAGE_KEY_PLANS = 'kakeibo_plans_v1';
 const STORAGE_KEY_EXPENSES = 'kakeibo_expenses_v1';
@@ -27,6 +28,8 @@ const STORAGE_KEY_LAST_SYNC = 'kakeibo_last_sync_v1';
 const STORAGE_KEY_GLOBAL_CURRENCY = 'kakeibo_global_currency_v1';
 const STORAGE_KEY_PIN_CONFIG = 'kakeibo_pin_config_v1';
 const STORAGE_KEY_PIN_LOCKED = 'kakeibo_pin_locked_v1';
+const STORAGE_KEY_INITIALIZED = 'kakeibo_initialized_v1';
+const STORAGE_KEY_LAST_RESET = 'kakeibo_last_reset_v1';
 
 export function getGlobalCurrency(): string {
   try {
@@ -150,10 +153,12 @@ export function computeCategorySectorBreakdown(
   );
 
   const totalActual = activeExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const totalPlanned = plan?.categoryBudgets?.[category] || 0;
 
   // Retrieve planned sectors or fallback to defaults if planned
   let plannedSectors: PlannedSector[] = plan?.plannedSectors?.[category] || [];
+  const plannedSectorsSum = plannedSectors.reduce((sum, s) => sum + (s.plannedAmount || 0), 0);
+  const totalPlanned = plannedSectorsSum > 0 ? plannedSectorsSum : (plan?.categoryBudgets?.[category] || 0);
+
   if (plannedSectors.length === 0 && totalPlanned > 0) {
     plannedSectors = getDefaultPlannedSectors(category, totalPlanned);
   }
@@ -442,9 +447,13 @@ class StorageManager {
       const rawSavings = localStorage.getItem(STORAGE_KEY_SAVINGS);
 
       if (!rawPlans && !rawExpenses) {
-        const seed = getSeedData();
-        this.saveLocalState(seed.plans, seed.expenses, seed.savingsEntries);
-        return seed;
+        const initialized = localStorage.getItem(STORAGE_KEY_INITIALIZED);
+        if (!initialized) {
+          const seed = getSeedData();
+          localStorage.setItem(STORAGE_KEY_INITIALIZED, 'true');
+          this.saveLocalState(seed.plans, seed.expenses, seed.savingsEntries);
+          return seed;
+        }
       }
 
       let plans: Plan[] = rawPlans ? JSON.parse(rawPlans) : [];
@@ -718,7 +727,15 @@ class StorageManager {
   }
 
   // Reset all user data / Clean Slate
-  public resetAllData(createFreshCurrentMonth = true): void {
+  public async resetAllData(createFreshCurrentMonth = false): Promise<void> {
+    const now = Date.now();
+    try {
+      localStorage.setItem(STORAGE_KEY_LAST_RESET, String(now));
+      localStorage.setItem(STORAGE_KEY_INITIALIZED, 'true');
+    } catch {
+      // ignore
+    }
+
     const curMonth = getCurrentMonthKey();
     const globalCurr = getGlobalCurrency();
 
@@ -739,7 +756,7 @@ class StorageManager {
           },
           currency: globalCurr,
           reflection: '',
-          updatedAt: Date.now(),
+          updatedAt: now,
         },
       ];
     }
@@ -748,7 +765,29 @@ class StorageManager {
     this.saveInboxTransactions([]);
 
     // Clear remote state as well if online
-    this.triggerSync();
+    try {
+      const user = this.getUser();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      const token = await getIdToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else if (user.uid) {
+        headers['x-user-id'] = user.uid;
+      }
+
+      await fetch('/api/reset', {
+        method: 'POST',
+        headers,
+      }).catch(() => {
+        // ignore offline network failure
+      });
+    } catch {
+      // ignore
+    }
+
     this.notify();
   }
 
@@ -808,8 +847,14 @@ class StorageManager {
       const user = this.getUser();
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'x-user-id': user.uid,
       };
+
+      const token = await getIdToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else if (user.uid) {
+        headers['x-user-id'] = user.uid;
+      }
 
       const local = this.getLocalState();
 
@@ -851,6 +896,9 @@ class StorageManager {
     remoteExpenses: Expense[], 
     remoteSavings: SavingsEntry[] = []
   ) {
+    const lastResetStr = localStorage.getItem(STORAGE_KEY_LAST_RESET);
+    const lastResetTime = lastResetStr ? parseInt(lastResetStr, 10) : 0;
+
     const local = this.getLocalState();
     const planMap = new Map<string, Plan>();
     const expenseMap = new Map<string, Expense>();
@@ -861,8 +909,9 @@ class StorageManager {
     local.expenses.forEach((e) => expenseMap.set(e.id, e));
     (local.savingsEntries || []).forEach((s) => savingsMap.set(s.id, s));
 
-    // Upsert remote if newer
+    // Upsert remote if newer and after last reset
     remotePlans.forEach((rp) => {
+      if ((rp.updatedAt || 0) <= lastResetTime) return;
       const lp = planMap.get(rp.monthKey);
       if (!lp || (rp.updatedAt || 0) >= (lp.updatedAt || 0)) {
         planMap.set(rp.monthKey, rp);
@@ -872,6 +921,7 @@ class StorageManager {
     remoteExpenses.forEach((re) => {
       // Filter rogue 48000 entry if any in remote
       if (re.id === '0428c8be-36dd-4c54-b658-584ed31daacc' || (re.amount === 48000 && !re.note)) return;
+      if ((re.updatedAt || 0) <= lastResetTime || (re.createdAt || 0) <= lastResetTime) return;
       const le = expenseMap.get(re.id);
       if (!le || (re.updatedAt || 0) >= (le.updatedAt || 0)) {
         expenseMap.set(re.id, re);
@@ -879,6 +929,7 @@ class StorageManager {
     });
 
     remoteSavings.forEach((rs) => {
+      if ((rs.updatedAt || 0) <= lastResetTime || (rs.createdAt || 0) <= lastResetTime) return;
       const ls = savingsMap.get(rs.id);
       if (!ls || (rs.updatedAt || 0) >= (ls.updatedAt || 0)) {
         savingsMap.set(rs.id, rs);

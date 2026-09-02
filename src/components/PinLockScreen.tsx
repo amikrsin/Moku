@@ -1,18 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Lock, 
   Delete, 
   KeyRound, 
-  ShieldAlert, 
   HelpCircle, 
   CheckCircle2, 
-  X, 
-  RotateCcw,
-  Sparkles 
+  X
 } from 'lucide-react';
 import { PinSecurityConfig } from '../types';
 import { hashString } from '../lib/security';
 import { storage } from '../lib/storage';
+import { AppButton } from './ui/AppButton';
 
 interface PinLockScreenProps {
   onUnlocked: () => void;
@@ -97,7 +95,6 @@ export function PinLockScreen({ onUnlocked }: PinLockScreenProps) {
           setRecoveryError('Incorrect answer to security question.');
         }
       } else {
-        // Recovery Key
         const cleanInput = recoveryInput.trim().toUpperCase();
         const cleanKey = (config.recoveryKey || '').trim().toUpperCase();
         if (cleanInput === cleanKey) {
@@ -138,249 +135,210 @@ export function PinLockScreen({ onUnlocked }: PinLockScreenProps) {
         onUnlocked();
       }, 1200);
     } catch {
-      setRecoveryError('Failed to save new PIN.');
+      setRecoveryError('Failed to update PIN.');
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#F7F8F7] dark:bg-[#121412] text-[#1A1C1A] dark:text-[#E3E5E1] flex flex-col justify-between items-center py-10 px-6 select-none animate-in fade-in duration-200">
-      {/* Top Header & Logo */}
-      <div className="text-center space-y-3 pt-6">
-        <div className="w-16 h-16 rounded-2xl bg-[#D8F3E7] dark:bg-[#214C3D] border border-[#176B52]/20 dark:border-[#82D9B4]/30 mx-auto flex items-center justify-center text-[#176B52] dark:text-[#82D9B4] shadow-xs">
-          <span className="text-3xl font-black tracking-tight">M</span>
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between p-6 bg-[var(--moku-background)] text-[var(--moku-text-primary)] select-none">
+      {/* Top Header */}
+      <div className="w-full max-w-xs flex flex-col items-center text-center pt-8">
+        <div className="w-16 h-16 rounded-2xl bg-[var(--moku-primary-container)] border border-[var(--moku-primary)]/20 text-[var(--moku-primary)] flex items-center justify-center shadow-xs mb-4">
+          <Lock className="w-8 h-8" />
         </div>
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1A1C1A] dark:text-[#E3E5E1]">
-            MOKU Ledger Lock
-          </h2>
-          <p className="text-xs text-[#6E736F] dark:text-[#C1C7C0] mt-1">
-            Enter 4-digit PIN to access your accounts
-          </p>
-        </div>
-      </div>
+        <h1 className="text-xl font-bold tracking-tight text-[var(--moku-text-primary)]">
+          Enter MOKU PIN
+        </h1>
+        <p className="text-xs text-[var(--moku-text-secondary)] mt-1">
+          Your financial ledger is locked for privacy
+        </p>
 
-      {/* Passcode Indicator Dots */}
-      <div className="space-y-4 text-center">
-        <div className={`flex items-center justify-center space-x-4 ${shake ? 'animate-shake' : ''}`}>
-          {[0, 1, 2, 3].map((index) => {
-            const isFilled = pin.length > index;
+        {/* PIN Indicators */}
+        <div className={`flex items-center space-x-4 my-8 ${shake ? 'animate-shake' : ''}`}>
+          {[0, 1, 2, 3].map((idx) => {
+            const isFilled = pin.length > idx;
             return (
               <div
-                key={index}
-                className={`w-4 h-4 rounded-full transition-all duration-150 ${
+                key={idx}
+                className={`w-4 h-4 rounded-full transition-all duration-200 ${
                   isFilled
-                    ? 'bg-[#176B52] dark:bg-[#82D9B4] scale-115 shadow-2xs'
-                    : 'border-2 border-[#DDE2DD] dark:border-[#414842] bg-white dark:bg-[#1B1E1B]'
+                    ? 'bg-[var(--moku-primary)] scale-110 shadow-xs'
+                    : 'bg-[var(--moku-surface-secondary)] border-2 border-[var(--moku-outline)]'
                 }`}
               />
             );
           })}
         </div>
 
-        {errorMsg ? (
-          <p className="text-xs font-semibold text-[#BA1A1A] dark:text-[#FF897D] h-4">
+        {errorMsg && (
+          <p className="text-xs font-semibold text-[var(--moku-danger)] animate-in fade-in">
             {errorMsg}
           </p>
-        ) : (
-          <div className="h-4" />
         )}
       </div>
 
-      {/* Numeric Keypad */}
-      <div className="w-full max-w-xs space-y-3">
-        <div className="grid grid-cols-3 gap-3">
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
-            <button
-              key={digit}
-              type="button"
-              onClick={() => handleKeyPress(digit)}
-              className="h-14 rounded-2xl bg-white dark:bg-[#1B1E1B] border border-[#DDE2DD] dark:border-[#414842] text-xl font-bold text-[#1A1C1A] dark:text-[#E3E5E1] hover:bg-[#EEF1EE] dark:hover:bg-[#252925] active:scale-95 transition-all cursor-pointer shadow-xs"
-            >
-              {digit}
-            </button>
-          ))}
-
-          {/* Bottom Row */}
-          <div className="flex items-center justify-center">
-            {/* Auxiliary space */}
-          </div>
-
+      {/* Number Pad Grid */}
+      <div className="w-full max-w-xs grid grid-cols-3 gap-3.5 my-auto pb-4">
+        {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
           <button
+            key={num}
             type="button"
-            onClick={() => handleKeyPress('0')}
-            className="h-14 rounded-2xl bg-white dark:bg-[#1B1E1B] border border-[#DDE2DD] dark:border-[#414842] text-xl font-bold text-[#1A1C1A] dark:text-[#E3E5E1] hover:bg-[#EEF1EE] dark:hover:bg-[#252925] active:scale-95 transition-all cursor-pointer shadow-xs"
+            onClick={() => handleKeyPress(num)}
+            className="h-16 rounded-2xl bg-[var(--moku-surface)] border border-[var(--moku-outline)] text-2xl font-bold font-tabular text-[var(--moku-text-primary)] hover:bg-[var(--moku-surface-secondary)] active:scale-95 transition-all shadow-2xs cursor-pointer"
           >
-            0
+            {num}
           </button>
+        ))}
 
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="h-14 rounded-2xl bg-[#EEF1EE] dark:bg-[#252925] border border-[#DDE2DD] dark:border-[#414842] flex items-center justify-center text-[#6E736F] dark:text-[#C1C7C0] hover:text-[#1A1C1A] dark:hover:text-white active:scale-95 transition-all cursor-pointer shadow-xs"
-            title="Delete digit"
-          >
-            <Delete className="w-5 h-5" />
-          </button>
-        </div>
+        {/* Forgot PIN / Recovery Button */}
+        <button
+          type="button"
+          onClick={handleOpenRecovery}
+          className="h-16 rounded-2xl text-[11px] font-bold text-[var(--moku-text-secondary)] hover:text-[var(--moku-primary)] flex flex-col items-center justify-center cursor-pointer"
+        >
+          <HelpCircle className="w-4 h-4 mb-0.5" />
+          <span>Forgot?</span>
+        </button>
 
-        {/* Forgot PIN Recovery Trigger */}
-        <div className="text-center pt-3">
-          <button
-            type="button"
-            onClick={handleOpenRecovery}
-            className="text-xs font-semibold text-[#176B52] dark:text-[#82D9B4] hover:underline cursor-pointer inline-flex items-center space-x-1.5"
-          >
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>Forgot PIN? Recover Access</span>
-          </button>
-        </div>
+        {/* 0 */}
+        <button
+          type="button"
+          onClick={() => handleKeyPress('0')}
+          className="h-16 rounded-2xl bg-[var(--moku-surface)] border border-[var(--moku-outline)] text-2xl font-bold font-tabular text-[var(--moku-text-primary)] hover:bg-[var(--moku-surface-secondary)] active:scale-95 transition-all shadow-2xs cursor-pointer"
+        >
+          0
+        </button>
+
+        {/* Backspace / Delete */}
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="h-16 rounded-2xl text-[var(--moku-text-secondary)] hover:text-[var(--moku-text-primary)] flex items-center justify-center active:scale-95 transition-all cursor-pointer"
+          aria-label="Delete last digit"
+        >
+          <Delete className="w-6 h-6" />
+        </button>
       </div>
 
-      {/* Forgot PIN Recovery Pipeline Modal */}
+      {/* Recovery Modal */}
       {showRecoveryModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-[#1B1E1B] text-[#1A1C1A] dark:text-[#E3E5E1] rounded-[28px] border border-[#DDE2DD] dark:border-[#414842] max-w-md w-full p-6 sm:p-7 shadow-2xl relative space-y-4">
-            <button
-              type="button"
-              onClick={() => setShowRecoveryModal(false)}
-              className="absolute top-5 right-5 p-2 text-[#6E736F] dark:text-[#C1C7C0] hover:text-[#1A1C1A] dark:hover:text-white rounded-xl hover:bg-[#EEF1EE] dark:hover:bg-[#252925] cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="text-center space-y-1.5 pt-1">
-              <div className="w-12 h-12 rounded-2xl bg-[#D8F3E7] dark:bg-[#214C3D] border border-[#176B52]/20 dark:border-[#82D9B4]/30 mx-auto flex items-center justify-center text-[#176B52] dark:text-[#82D9B4]">
-                <KeyRound className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-[var(--moku-surface)] text-[var(--moku-text-primary)] border border-[var(--moku-outline)] rounded-[26px] p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <KeyRound className="w-5 h-5 text-[var(--moku-primary)]" />
+                <h3 className="text-base font-bold text-[var(--moku-text-primary)]">
+                  PIN Recovery
+                </h3>
               </div>
-              <h3 className="text-lg font-bold text-[#1A1C1A] dark:text-[#E3E5E1]">
-                PIN Recovery Pipeline
-              </h3>
-              <p className="text-xs text-[#6E736F] dark:text-[#C1C7C0]">
-                Verify your identity to reset your PIN without losing any financial entries.
-              </p>
+              <button
+                type="button"
+                onClick={() => setShowRecoveryModal(false)}
+                className="p-1 rounded-full text-[var(--moku-text-secondary)] hover:bg-[var(--moku-surface-secondary)] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {recoveryError && (
-              <div className="p-3.5 rounded-2xl bg-[#FCE8E6] dark:bg-[#3D1E1E] border border-[#BA1A1A]/30 text-xs text-[#BA1A1A] dark:text-[#FF897D]">
-                {recoveryError}
-              </div>
-            )}
-
-            {recoverySuccess && (
-              <div className="p-3.5 rounded-2xl bg-[#D8F3E7] dark:bg-[#214C3D] border border-[#176B52]/30 text-xs text-[#176B52] dark:text-[#82D9B4] flex items-center space-x-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>PIN reset successfully! Unlocking ledger...</span>
-              </div>
-            )}
-
-            {recoveryStep === 'verify' && !recoverySuccess && (
+            {recoveryStep === 'verify' ? (
               <form onSubmit={handleVerifyRecovery} className="space-y-4">
-                {/* Method Switcher */}
-                <div className="grid grid-cols-2 gap-1.5 bg-[#EEF1EE] dark:bg-[#252925] p-1.5 rounded-xl border border-[#DDE2DD] dark:border-[#414842]">
+                <div className="flex space-x-2 border-b border-[var(--moku-outline)] pb-2 text-xs font-semibold">
                   <button
                     type="button"
-                    onClick={() => {
-                      setRecoveryMode('question');
-                      setRecoveryError('');
-                    }}
-                    className={`py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
-                      recoveryMode === 'question'
-                        ? 'bg-white dark:bg-[#1B1E1B] text-[#1A1C1A] dark:text-[#E3E5E1] shadow-2xs'
-                        : 'text-[#6E736F] dark:text-[#C1C7C0]'
-                    }`}
+                    onClick={() => setRecoveryMode('question')}
+                    className={`pb-1 ${recoveryMode === 'question' ? 'text-[var(--moku-primary)] border-b-2 border-[var(--moku-primary)]' : 'text-[var(--moku-text-secondary)]'}`}
                   >
                     Security Question
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setRecoveryMode('key');
-                      setRecoveryError('');
-                    }}
-                    className={`py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
-                      recoveryMode === 'key'
-                        ? 'bg-white dark:bg-[#1B1E1B] text-[#1A1C1A] dark:text-[#E3E5E1] shadow-2xs'
-                        : 'text-[#6E736F] dark:text-[#C1C7C0]'
-                    }`}
+                    onClick={() => setRecoveryMode('key')}
+                    className={`pb-1 ${recoveryMode === 'key' ? 'text-[var(--moku-primary)] border-b-2 border-[var(--moku-primary)]' : 'text-[var(--moku-text-secondary)]'}`}
                   >
-                    Recovery Key
+                    Master Recovery Key
                   </button>
                 </div>
 
                 {recoveryMode === 'question' ? (
                   <div>
-                    <label className="block text-xs font-bold text-[#6E736F] dark:text-[#C1C7C0] mb-1.5 uppercase tracking-wider">
-                      {config.securityQuestion || 'What was the name of your first school?'}
+                    <label className="block text-xs font-semibold text-[var(--moku-text-secondary)] mb-1">
+                      {config.securityQuestion || 'What was the name of your first elementary school?'}
                     </label>
                     <input
                       type="text"
+                      required
+                      placeholder="Your secret answer..."
                       value={recoveryInput}
                       onChange={(e) => setRecoveryInput(e.target.value)}
-                      placeholder="Enter your security answer"
-                      className="w-full p-3 text-xs rounded-xl border border-[#DDE2DD] dark:border-[#414842] bg-[#F7F8F7] dark:bg-[#252925] text-[#1A1C1A] dark:text-[#E3E5E1] outline-none focus:border-[#176B52]"
+                      className="w-full bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] rounded-xl px-3 py-2 text-xs text-[var(--moku-text-primary)] outline-none focus:border-[var(--moku-primary)]"
                     />
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs font-bold text-[#6E736F] dark:text-[#C1C7C0] mb-1.5 uppercase tracking-wider">
-                      Enter Master Recovery Key
+                    <label className="block text-xs font-semibold text-[var(--moku-text-secondary)] mb-1">
+                      Enter 12-character Master Recovery Key
                     </label>
                     <input
                       type="text"
+                      required
+                      placeholder="e.g. MOKU-XXXX-XXXX"
                       value={recoveryInput}
                       onChange={(e) => setRecoveryInput(e.target.value)}
-                      placeholder="e.g. MOKU-XXXX-XXXX"
-                      className="w-full p-3 text-xs font-mono uppercase tracking-wider rounded-xl border border-[#DDE2DD] dark:border-[#414842] bg-[#F7F8F7] dark:bg-[#252925] text-[#1A1C1A] dark:text-[#E3E5E1] outline-none focus:border-[#176B52]"
+                      className="w-full bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] rounded-xl px-3 py-2 text-xs text-[var(--moku-text-primary)] outline-none font-mono focus:border-[var(--moku-primary)]"
                     />
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  className="w-full py-3.5 rounded-xl bg-[#176B52] hover:bg-[#125843] dark:bg-[#82D9B4] dark:hover:bg-[#6ec29e] text-white dark:text-[#121412] font-bold text-xs shadow-xs cursor-pointer transition-colors"
-                >
-                  Verify & Proceed →
-                </button>
+                {recoveryError && (
+                  <p className="text-xs font-semibold text-[var(--moku-danger)]">{recoveryError}</p>
+                )}
+
+                <AppButton type="submit" fullWidth size="md">
+                  Verify &amp; Set New PIN
+                </AppButton>
               </form>
-            )}
-
-            {recoveryStep === 'new_pin' && !recoverySuccess && (
+            ) : (
               <form onSubmit={handleSaveRecoveredPin} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#6E736F] dark:text-[#C1C7C0] mb-1.5 uppercase tracking-wider">
-                    Enter New 4-Digit PIN
-                  </label>
+                <p className="text-xs text-[var(--moku-text-secondary)]">
+                  Verification successful. Please create a new 4-digit PIN for your ledger.
+                </p>
+
+                <div className="space-y-2">
                   <input
                     type="password"
                     maxLength={4}
+                    inputMode="numeric"
+                    required
+                    placeholder="Enter new 4-digit PIN"
                     value={newPin}
-                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    placeholder="••••"
-                    className="w-full text-center text-xl font-mono py-3 rounded-xl border border-[#DDE2DD] dark:border-[#414842] bg-[#F7F8F7] dark:bg-[#252925] text-[#1A1C1A] dark:text-[#E3E5E1] outline-none focus:border-[#176B52]"
+                    onChange={(e) => setNewPin(e.target.value)}
+                    className="w-full bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] rounded-xl px-3 py-2 text-center text-lg font-bold font-tabular tracking-widest outline-none"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#6E736F] dark:text-[#C1C7C0] mb-1.5 uppercase tracking-wider">
-                    Confirm New 4-Digit PIN
-                  </label>
                   <input
                     type="password"
                     maxLength={4}
+                    inputMode="numeric"
+                    required
+                    placeholder="Confirm new PIN"
                     value={confirmNewPin}
-                    onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    placeholder="••••"
-                    className="w-full text-center text-xl font-mono py-3 rounded-xl border border-[#DDE2DD] dark:border-[#414842] bg-[#F7F8F7] dark:bg-[#252925] text-[#1A1C1A] dark:text-[#E3E5E1] outline-none focus:border-[#176B52]"
+                    onChange={(e) => setConfirmNewPin(e.target.value)}
+                    className="w-full bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] rounded-xl px-3 py-2 text-center text-lg font-bold font-tabular tracking-widest outline-none"
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={newPin.length !== 4 || confirmNewPin.length !== 4}
-                  className="w-full py-3.5 rounded-xl bg-[#176B52] hover:bg-[#125843] dark:bg-[#82D9B4] dark:hover:bg-[#6ec29e] text-white dark:text-[#121412] font-bold text-xs shadow-xs cursor-pointer disabled:opacity-40 transition-colors"
-                >
-                  Set New PIN & Unlock Ledger
-                </button>
+                {recoveryError && (
+                  <p className="text-xs font-semibold text-[var(--moku-danger)]">{recoveryError}</p>
+                )}
+                {recoverySuccess && (
+                  <p className="text-xs font-semibold text-[var(--moku-primary)] flex items-center space-x-1">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>PIN updated! Unlocking...</span>
+                  </p>
+                )}
+
+                <AppButton type="submit" fullWidth size="md">
+                  Save &amp; Unlock
+                </AppButton>
               </form>
             )}
           </div>

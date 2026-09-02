@@ -1,23 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import { 
   ChevronDown, 
-  ChevronUp,
   Moon, 
   Sun, 
   ArrowUpRight, 
-  TrendingUp, 
   PlusCircle, 
   Clock, 
-  Layers,
   Inbox,
   Sparkles,
-  AlertTriangle,
-  CheckCircle2,
-  Calendar,
-  Compass
+  Calendar
 } from 'lucide-react';
-import { Expense, Plan, SavingsEntry, UserProfile, CATEGORIES, Category, BudgetSignal } from '../types';
+import { Expense, Plan, SavingsEntry, UserProfile, CATEGORIES, Category } from '../types';
 import { formatCurrency, formatMonthName, computeCategorySectorBreakdown } from '../lib/storage';
+import { CategoryBudgetCard } from './budget/CategoryBudgetCard';
+import { PlanVsActual } from './budget/PlanVsActual';
+import { TransactionItem } from './transactions/TransactionItem';
+import { AppCard } from './ui/AppCard';
+import { AppButton } from './ui/AppButton';
+import { MoneyAmount } from './ui/MoneyAmount';
+import { EmptyState } from './ui/EmptyState';
 
 interface HomeScreenProps {
   monthKey: string;
@@ -82,8 +83,8 @@ export function HomeScreen({
     return activeSavings.reduce((sum, s) => sum + s.amount, 0);
   }, [activeSavings]);
 
-  const income = plan?.income || 50000;
-  const savingsTarget = plan?.savingsTarget || 10000;
+  const income = plan ? (plan.income ?? 0) : 0;
+  const savingsTarget = plan ? (plan.savingsTarget ?? 0) : 0;
   const availableToSpendBudget = Math.max(0, income - savingsTarget);
   const remainingToSpend = availableToSpendBudget - totalSpent;
 
@@ -147,49 +148,6 @@ export function HomeScreen({
     return Array.from(set).sort().reverse();
   }, [allPlans, monthKey]);
 
-  // Status badge styling helper
-  const renderSignalBadge = (status: BudgetSignal) => {
-    switch (status) {
-      case 'ON_TRACK':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#D8F3E7] dark:bg-[#214C3D] text-[#176B52] dark:text-[#82D9B4]">
-            ON TRACK
-          </span>
-        );
-      case 'PAID':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-            PAID
-          </span>
-        );
-      case 'WATCH':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
-            WATCH
-          </span>
-        );
-      case 'OVER_PLAN':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300">
-            OVER PLAN
-          </span>
-        );
-      case 'UNPLANNED':
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300">
-            UNPLANNED
-          </span>
-        );
-      case 'NOT_STARTED':
-      default:
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EEF1EE] dark:bg-[#2B312B] text-[#6E736F] dark:text-[#C1C7C0]">
-            NOT STARTED
-          </span>
-        );
-    }
-  };
-
   return (
     <div className="space-y-5 pb-8 animate-in fade-in duration-200">
       {/* Top Bar: Month Selector & Theme Toggle */}
@@ -199,7 +157,7 @@ export function HomeScreen({
             id="home-month-select"
             value={monthKey}
             onChange={(e) => onChangeMonth(e.target.value)}
-            className="appearance-none bg-[#EEF1EE] dark:bg-[#252925] text-[#1A1C1A] dark:text-[#E3E5E1] text-xs font-semibold py-2 pl-3.5 pr-8 rounded-xl border border-[#DDE2DD] dark:border-[#414842] outline-none cursor-pointer hover:border-[#176B52] transition-colors"
+            className="appearance-none bg-[var(--moku-surface-secondary)] text-[var(--moku-text-primary)] text-xs font-semibold py-2 pl-3.5 pr-8 rounded-xl border border-[var(--moku-outline)] outline-none cursor-pointer hover:border-[var(--moku-primary)] transition-colors"
           >
             {monthOptions.map((m) => (
               <option key={m} value={m}>
@@ -207,14 +165,14 @@ export function HomeScreen({
               </option>
             ))}
           </select>
-          <ChevronDown className="w-3.5 h-3.5 text-[#6E736F] dark:text-[#C1C7C0] absolute right-2.5 pointer-events-none" />
+          <ChevronDown className="w-3.5 h-3.5 text-[var(--moku-text-secondary)] absolute right-2.5 pointer-events-none" />
         </div>
 
         <div className="flex items-center space-x-2">
           {inboxPendingCount > 0 && (
             <button
               onClick={onOpenInbox}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[#D8F3E7] dark:bg-[#214C3D] text-[#176B52] dark:text-[#82D9B4] text-xs font-bold transition-all shadow-xs cursor-pointer"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[var(--moku-primary-container)] text-[var(--moku-primary)] text-xs font-bold transition-all shadow-2xs cursor-pointer"
             >
               <Inbox className="w-3.5 h-3.5" />
               <span>{inboxPendingCount} pending</span>
@@ -225,35 +183,54 @@ export function HomeScreen({
             id="theme-toggle-btn"
             type="button"
             onClick={onToggleDarkMode}
-            className="p-2 rounded-xl bg-[#EEF1EE] dark:bg-[#252925] text-[#1A1C1A] dark:text-[#E3E5E1] border border-[#DDE2DD] dark:border-[#414842] hover:bg-[#DDE2DD] dark:hover:bg-[#343B35] transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-[var(--moku-surface-secondary)] text-[var(--moku-text-primary)] border border-[var(--moku-outline)] hover:bg-[var(--moku-surface-tertiary)] transition-colors cursor-pointer"
             aria-label="Toggle dark mode"
           >
-            {isDarkMode ? <Sun className="w-4 h-4 text-[#82D9B4]" /> : <Moon className="w-4 h-4 text-[#176B52]" />}
+            {isDarkMode ? <Sun className="w-4 h-4 text-[var(--moku-primary)]" /> : <Moon className="w-4 h-4 text-[var(--moku-primary)]" />}
           </button>
         </div>
       </div>
 
       {/* Greeting & Headline */}
       <div>
-        <div className="text-xs font-medium text-[#6E736F] dark:text-[#C1C7C0] tracking-wide">
+        <div className="text-xs font-medium text-[var(--moku-text-secondary)] tracking-wide">
           {greeting}
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1A1C1A] dark:text-[#E3E5E1] mt-0.5">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--moku-text-primary)] mt-0.5">
           Here&apos;s your money this month.
         </h1>
       </div>
 
-      {/* HERO CARD: Available to Spend */}
-      <div className="bg-[#176B52] dark:bg-[#1B382D] text-white rounded-[24px] p-6 shadow-lg shadow-[#176B52]/10 relative overflow-hidden">
-        <div className="absolute -top-12 -right-12 w-36 h-36 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+      {/* Plan Not Set Notice Banner */}
+      {(!plan || (plan.income === 0 && plan.savingsTarget === 0)) && (
+        <div className="p-4 rounded-[22px] bg-[var(--moku-primary-container)] border border-[var(--moku-primary)]/30 flex items-center justify-between shadow-2xs animate-in fade-in duration-200">
+          <div className="space-y-0.5 pr-2">
+            <span className="text-xs font-bold text-[var(--moku-primary)] block">
+              Monthly Plan Not Set
+            </span>
+            <p className="text-xs text-[var(--moku-text-secondary)]">
+              Set your expected income and savings goal for {formatMonthName(monthKey)} to unlock mindful budget tracking.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenPlanSetup}
+            className="px-3.5 py-2 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold shrink-0 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+          >
+            Set Plan
+          </button>
+        </div>
+      )}
 
+      {/* HERO CARD: Available to Spend */}
+      <div className="bg-[var(--moku-primary)] text-white rounded-[26px] p-6 shadow-md relative overflow-hidden">
         <div className="flex items-center justify-between">
-          <div className="text-xs font-bold tracking-wider uppercase text-white/75">
+          <div className="text-xs font-bold tracking-wider uppercase opacity-85">
             Available to spend
           </div>
           <button
             onClick={onOpenPlanSetup}
-            className="text-[11px] font-semibold text-[#82D9B4] hover:underline cursor-pointer"
+            className="text-[11px] font-semibold underline underline-offset-2 opacity-90 hover:opacity-100 cursor-pointer"
           >
             {plan ? 'Adjust plan ›' : 'Set monthly plan ›'}
           </button>
@@ -263,7 +240,7 @@ export function HomeScreen({
           {formatCurrency(remainingToSpend, currency)}
         </div>
 
-        <div className="flex items-center justify-between text-xs text-white/85 pt-1">
+        <div className="flex items-center justify-between text-xs opacity-90 pt-1">
           <span>{formatMonthName(monthKey)}</span>
           <span className="font-tabular font-medium">{remainingPercentage}% remaining</span>
         </div>
@@ -278,7 +255,7 @@ export function HomeScreen({
 
         {/* Daily Pacing Footnote */}
         {daysRemaining > 0 && remainingToSpend > 0 && (
-          <div className="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs text-white/90">
+          <div className="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs opacity-95">
             <span className="flex items-center space-x-1">
               <Calendar className="w-3.5 h-3.5 opacity-80" />
               <span>{daysRemaining} days remaining</span>
@@ -291,15 +268,15 @@ export function HomeScreen({
       </div>
 
       {/* Savings Goal Card */}
-      <div className="bg-[#D8F3E7] dark:bg-[#214C3D] rounded-[22px] p-5 border border-[#176B52]/15 dark:border-[#82D9B4]/20 shadow-xs">
+      <div className="bg-[var(--moku-primary-container)] rounded-[22px] p-5 border border-[var(--moku-primary)]/20 shadow-2xs">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-[#176B52] dark:text-[#82D9B4] uppercase tracking-wide">
+            <div className="text-xs font-semibold text-[var(--moku-primary)] uppercase tracking-wide">
               Savings Goal (Committed First)
             </div>
-            <div className="text-lg font-bold text-[#1A1C1A] dark:text-[#E3E5E1] mt-0.5 font-tabular">
+            <div className="text-lg font-bold text-[var(--moku-text-primary)] mt-0.5 font-tabular">
               {formatCurrency(totalSaved, currency)}{' '}
-              <span className="text-xs font-normal text-[#6E736F] dark:text-[#C1C7C0]">
+              <span className="text-xs font-normal text-[var(--moku-text-secondary)]">
                 of {formatCurrency(savingsTarget, currency)}
               </span>
             </div>
@@ -309,7 +286,7 @@ export function HomeScreen({
             id="log-savings-btn"
             type="button"
             onClick={onOpenSavingsModal}
-            className="p-2 rounded-xl bg-[#176B52] text-white dark:bg-[#82D9B4] dark:text-[#121412] hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+            className="p-2 rounded-xl bg-[var(--moku-primary)] text-white hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
             title="Log savings deposit"
           >
             <ArrowUpRight className="w-5 h-5" />
@@ -317,23 +294,32 @@ export function HomeScreen({
         </div>
 
         {/* Savings Progress Bar */}
-        <div className="h-2 w-full bg-[#176B52]/15 dark:bg-white/15 rounded-full mt-3 overflow-hidden">
+        <div className="h-2 w-full bg-[var(--moku-primary)]/15 rounded-full mt-3 overflow-hidden">
           <div 
-            className="h-full bg-[#176B52] dark:bg-[#82D9B4] rounded-full transition-all duration-500" 
+            className="h-full bg-[var(--moku-primary)] rounded-full transition-all duration-500" 
             style={{ width: `${Math.max(3, savingsPercentage)}%` }}
           />
         </div>
       </div>
 
+      {/* Plan vs Actual Summary */}
+      <PlanVsActual
+        plan={plan}
+        expenses={expenses}
+        monthKey={monthKey}
+        currency={currency}
+        onOpenPlanWizard={onOpenPlanSetup}
+      />
+
       {/* Mindful Habit Note (Kakeibo Intention) */}
       {plan?.improvementNotes && (
-        <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 flex items-start space-x-2.5">
-          <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+        <div className="p-3.5 rounded-2xl bg-[var(--moku-warning-container)] border border-[var(--moku-warning)]/30 flex items-start space-x-2.5">
+          <Sparkles className="w-4 h-4 text-[var(--moku-warning-text)] shrink-0 mt-0.5" />
           <div>
-            <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 uppercase tracking-wider block">
+            <span className="text-[11px] font-bold text-[var(--moku-warning-text)] uppercase tracking-wider block">
               Monthly Mindfulness Intention
             </span>
-            <p className="text-xs text-[#1A1C1A] dark:text-[#E3E5E1] mt-0.5 italic">
+            <p className="text-xs text-[var(--moku-text-primary)] mt-0.5 italic">
               &ldquo;{plan.improvementNotes}&rdquo;
             </p>
           </div>
@@ -344,16 +330,16 @@ export function HomeScreen({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-[#1A1C1A] dark:text-[#E3E5E1]">
+            <h2 className="text-lg font-bold text-[var(--moku-text-primary)]">
               Category & Sector Allocations
             </h2>
-            <span className="text-xs text-[#6E736F] dark:text-[#C1C7C0]">
+            <span className="text-xs text-[var(--moku-text-secondary)]">
               Plan vs actual spending breakdown
             </span>
           </div>
           <button
             onClick={onOpenPlanSetup}
-            className="text-xs font-bold text-[#176B52] dark:text-[#82D9B4] hover:underline"
+            className="text-xs font-bold text-[var(--moku-primary)] hover:underline cursor-pointer"
           >
             Edit plan
           </button>
@@ -361,120 +347,23 @@ export function HomeScreen({
 
         <div className="space-y-3">
           {(Object.keys(CATEGORIES) as Category[]).map((catKey) => {
-            const cat = CATEGORIES[catKey];
             const breakdown = computeCategorySectorBreakdown(plan, expenses, catKey, monthKey);
             const isExpanded = expandedCategories[catKey];
-            const pct = breakdown.totalPlanned > 0 
-              ? Math.min(100, Math.round((breakdown.totalActual / breakdown.totalPlanned) * 100)) 
-              : 0;
 
             return (
-              <div
+              <CategoryBudgetCard
                 key={catKey}
-                className="bg-white dark:bg-[#1B1E1B] border border-[#DDE2DD] dark:border-[#414842] rounded-[22px] overflow-hidden shadow-xs"
-              >
-                {/* Category Header Bar */}
-                <div 
-                  onClick={() => toggleExpand(catKey)}
-                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-[#F7F8F7] dark:hover:bg-[#252925] transition-colors"
-                >
-                  <div className="flex items-center space-x-3 min-w-0">
-                    <span className="text-2xl shrink-0">{cat.icon}</span>
-                    <div className="min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-bold text-[#1A1C1A] dark:text-[#E3E5E1]">
-                          {cat.name}
-                        </span>
-                        {renderSignalBadge(breakdown.overallStatus)}
-                      </div>
-                      <div className="text-xs text-[#6E736F] dark:text-[#C1C7C0] mt-0.5">
-                        <span className="font-bold font-tabular text-[#1A1C1A] dark:text-[#E3E5E1]">
-                          {formatCurrency(breakdown.totalActual, currency)}
-                        </span>
-                        <span> of {formatCurrency(breakdown.totalPlanned, currency)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3 shrink-0">
-                    <div className="text-right">
-                      <span className="text-xs font-bold font-tabular text-[#176B52] dark:text-[#82D9B4] block">
-                        {pct}%
-                      </span>
-                      <span className="text-[10px] text-[#6E736F] dark:text-[#C1C7C0]">
-                        {formatCurrency(breakdown.remaining, currency)} left
-                      </span>
-                    </div>
-                    {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-[#6E736F]" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-[#6E736F]" />
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress bar across category */}
-                <div className="h-1.5 w-full bg-[#EEF1EE] dark:bg-[#2B312B]">
-                  <div 
-                    className={`h-full transition-all duration-300 ${
-                      breakdown.overallStatus === 'OVER_PLAN' 
-                        ? 'bg-rose-500' 
-                        : breakdown.overallStatus === 'WATCH' 
-                        ? 'bg-amber-500' 
-                        : 'bg-[#176B52] dark:bg-[#82D9B4]'
-                    }`}
-                    style={{ width: `${Math.min(100, pct)}%` }}
-                  />
-                </div>
-
-                {/* Expanded Individual Planned Expense Sectors */}
-                {isExpanded && (
-                  <div className="p-3.5 bg-[#F7F8F7] dark:bg-[#222722] border-t border-[#DDE2DD] dark:border-[#414842] space-y-2">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-[#6E736F] dark:text-[#C1C7C0] px-1 mb-1">
-                      Planned Sectors in {cat.name}
-                    </div>
-
-                    {breakdown.sectors.map((sec) => (
-                      <div
-                        key={sec.id}
-                        className="p-2.5 rounded-xl bg-white dark:bg-[#1B1E1B] border border-[#DDE2DD] dark:border-[#414842] flex items-center justify-between text-xs"
-                      >
-                        <div className="flex items-center space-x-2.5 min-w-0">
-                          <span className="text-base shrink-0">{sec.icon || '📌'}</span>
-                          <div className="min-w-0">
-                            <div className="flex items-center space-x-2">
-                              <span className="font-bold text-[#1A1C1A] dark:text-[#E3E5E1] truncate">
-                                {sec.name}
-                              </span>
-                              {renderSignalBadge(sec.status)}
-                            </div>
-                            <div className="text-[11px] text-[#6E736F] dark:text-[#C1C7C0] mt-0.5">
-                              {sec.isUnplanned ? (
-                                <span className="text-purple-600 dark:text-purple-400 font-semibold">Unplanned expense</span>
-                              ) : (
-                                <span>Plan: {formatCurrency(sec.plannedAmount, currency)}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="text-right shrink-0 pl-2">
-                          <strong className="text-xs font-bold text-[#1A1C1A] dark:text-[#E3E5E1] font-tabular block">
-                            {formatCurrency(sec.actualAmount, currency)}
-                          </strong>
-                          {!sec.isUnplanned && (
-                            <span className={`text-[10px] font-tabular ${sec.variance > 0 ? 'text-rose-600 font-bold' : 'text-[#6E736F]'}`}>
-                              {sec.variance > 0 
-                                ? `+${formatCurrency(sec.variance, currency)}` 
-                                : `${formatCurrency(sec.remainingAmount, currency)} left`}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                category={catKey}
+                totalPlanned={breakdown.totalPlanned}
+                totalActual={breakdown.totalActual}
+                remaining={breakdown.remaining}
+                variance={breakdown.variance}
+                overallStatus={breakdown.overallStatus}
+                sectors={breakdown.sectors}
+                currency={currency}
+                isExpanded={isExpanded}
+                onToggleExpand={() => toggleExpand(catKey)}
+              />
             );
           })}
         </div>
@@ -483,12 +372,12 @@ export function HomeScreen({
       {/* Recent Activity List */}
       <div className="space-y-3 pt-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[#1A1C1A] dark:text-[#E3E5E1]">
+          <h2 className="text-lg font-bold text-[var(--moku-text-primary)]">
             Recent Entries
           </h2>
           <button
             onClick={onOpenQuickAdd}
-            className="text-xs font-bold text-[#176B52] dark:text-[#82D9B4] flex items-center space-x-1 hover:underline cursor-pointer"
+            className="text-xs font-bold text-[var(--moku-primary)] flex items-center space-x-1 hover:underline cursor-pointer"
           >
             <PlusCircle className="w-3.5 h-3.5" />
             <span>Add expense</span>
@@ -496,59 +385,22 @@ export function HomeScreen({
         </div>
 
         {recentTransactions.length === 0 ? (
-          <div className="bg-white dark:bg-[#1B1E1B] border border-[#DDE2DD] dark:border-[#414842] rounded-[24px] p-8 text-center">
-            <Clock className="w-8 h-8 text-[#6E736F] mx-auto mb-2 opacity-50" />
-            <p className="text-sm font-medium text-[#1A1C1A] dark:text-[#E3E5E1]">
-              No expenses recorded this month
-            </p>
-            <p className="text-xs text-[#6E736F] dark:text-[#C1C7C0] mt-1">
-              Tap the center + button to add a planned or unplanned expense
-            </p>
-          </div>
+          <EmptyState
+            icon={<Clock className="w-6 h-6" />}
+            title="No expenses recorded this month"
+            description="Tap the + button to record a planned or unplanned expense."
+            actionLabel="Add Expense"
+            onAction={onOpenQuickAdd}
+          />
         ) : (
-          <div className="bg-white dark:bg-[#1B1E1B] border border-[#DDE2DD] dark:border-[#414842] rounded-[24px] overflow-hidden shadow-xs divide-y divide-[#DDE2DD] dark:divide-[#414842]">
-            {recentTransactions.map((tx) => {
-              const cat = CATEGORIES[tx.category] || CATEGORIES.survival;
-              const dateObj = tx.date ? new Date(tx.date) : new Date(tx.createdAt);
-              const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-              return (
-                <div 
-                  key={tx.id}
-                  className="p-4 flex items-center justify-between hover:bg-[#F7F8F7] dark:hover:bg-[#252925] transition-colors"
-                >
-                  <div className="flex items-center space-x-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-[#EEF1EE] dark:bg-[#252925] flex items-center justify-center text-lg shrink-0">
-                      {cat.icon}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-bold text-[#1A1C1A] dark:text-[#E3E5E1] truncate">
-                        {tx.note || cat.name}
-                      </div>
-                      <div className="text-xs text-[#6E736F] dark:text-[#C1C7C0] flex items-center space-x-1.5 mt-0.5">
-                        <span className="font-medium">{cat.name}</span>
-                        {tx.sectorName && (
-                          <>
-                            <span>•</span>
-                            <span className="px-1.5 py-0.5 rounded-md bg-[#EEF1EE] dark:bg-[#2B312B] text-[10px] font-bold text-[#176B52] dark:text-[#82D9B4]">
-                              {tx.sectorName}
-                            </span>
-                          </>
-                        )}
-                        <span>•</span>
-                        <span>{formattedDate}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-right shrink-0 pl-3">
-                    <div className="text-sm sm:text-base font-bold text-[#1A1C1A] dark:text-[#E3E5E1] font-tabular">
-                      −{formatCurrency(tx.amount, currency)}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="space-y-2">
+            {recentTransactions.map((tx) => (
+              <TransactionItem
+                key={tx.id}
+                expense={tx}
+                currency={currency}
+              />
+            ))}
           </div>
         )}
       </div>

@@ -1,9 +1,16 @@
 name = "moku"
+main = "worker/index.ts"
 compatibility_date = "2024-09-01"
 
 [assets]
 directory = "./dist"
 not_found_handling = "single-page-application"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "moku_db"
+database_id = "moku-d1-database-id"
+
 [vars]
 NODE_VERSION = "20"
+FIREBASE_PROJECT_ID = "kakeibo-ledger"

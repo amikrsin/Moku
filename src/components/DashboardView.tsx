@@ -75,8 +75,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [isSavingsModalOpen, setIsSavingsModalOpen] = useState(false);
 
   const [expandedCategories, setExpandedCategories] = useState<Record<Category, boolean>>({
-    survival: true,
-    optional: true,
+    survival: false,
+    optional: false,
     culture: false,
     extra: false,
   });
@@ -157,9 +157,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* Quick Copy Previous Plan Option if available */}
         {previousPlan && (
           <div className="p-4 rounded-lg bg-[#E5DFCE]/80 border border-[#565248]/25 text-left space-y-3 shadow-2xs">
-            <div className="flex items-center space-x-2 text-xs font-serif font-bold text-[#A8342A] uppercase tracking-wider">
+            <div className="flex items-center space-x-2 text-xs font-serif font-bold text-[#A8342A]">
               <Copy className="w-3.5 h-3.5" />
-              <span>Time-Saver</span>
+              <span>Copy Previous Plan</span>
             </div>
             <div>
               <p className="text-sm font-serif font-bold text-[#23211D]">
@@ -251,7 +251,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#565248]/20 pb-4">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-serif text-[#A8342A] tracking-wider uppercase font-bold">
+            <span className="text-xs font-serif text-[#A8342A] font-bold">
               {t.dashboardCurrentLedger}
             </span>
             <span className="text-[11px] text-[#565248]">({activeExpenses.length} {t.dashboardEntries})</span>
@@ -300,7 +300,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
         {/* Total Available Income */}
         <div className="bg-[#E5DFCE]/60 border border-[#565248]/20 rounded-md p-3">
-          <span className="text-[11px] text-[#565248] uppercase tracking-wider block font-medium">
+          <span className="text-xs text-[#565248] block font-medium">
             {t.dashboardIncome}
           </span>
           <div className="font-serif text-lg sm:text-xl font-bold text-[#23211D] font-tabular mt-0.5">
@@ -313,7 +313,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Total Spent So Far */}
         <div className="bg-[#E5DFCE]/60 border border-[#565248]/20 rounded-md p-3">
-          <span className="text-[11px] text-[#565248] uppercase tracking-wider block font-medium">
+          <span className="text-xs text-[#565248] block font-medium">
             {t.dashboardTotalSpent}
           </span>
           <div className="font-serif text-lg sm:text-xl font-bold text-[#A8342A] font-tabular mt-0.5">
@@ -327,7 +327,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Remaining Spend Budget */}
         <div className="bg-[#E5DFCE]/60 border border-[#565248]/20 rounded-md p-3">
-          <span className="text-[11px] text-[#565248] uppercase tracking-wider block font-medium">
+          <span className="text-xs text-[#565248] block font-medium">
             {t.dashboardRemaining}
           </span>
           <div className={`font-serif text-lg sm:text-xl font-bold font-tabular mt-0.5 ${remainingSpendBudget > 0 ? 'text-[#35415C]' : 'text-[#A8342A]'}`}>
@@ -340,7 +340,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Savings Target */}
         <div className="bg-[#E5DFCE]/60 border border-[#565248]/20 rounded-md p-3">
-          <span className="text-[11px] text-[#5C6E4E] uppercase tracking-wider block font-semibold">
+          <span className="text-xs text-[#5C6E4E] block font-semibold">
             {t.dashboardTarget}
           </span>
           <div className="font-serif text-lg sm:text-xl font-bold text-[#5C6E4E] font-tabular mt-0.5">
@@ -382,7 +382,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         <div className="flex items-baseline justify-between font-tabular">
           <div>
-            <span className="text-[10px] uppercase font-serif tracking-wider text-[#565248] font-bold block">
+            <span className="text-xs font-serif text-[#565248] font-medium block">
               Logged Actual
             </span>
             <span className="font-serif font-bold text-xl sm:text-2xl text-[#5C6E4E]">
@@ -391,7 +391,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="text-right">
-            <span className="text-[10px] uppercase font-serif tracking-wider text-[#565248] font-bold block">
+            <span className="text-xs font-serif text-[#565248] font-medium block">
               Target Goal
             </span>
             <span className="font-serif font-bold text-lg text-[#23211D]">
@@ -438,8 +438,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         {/* List of Logged Savings Entries for this month */}
         {activeSavings.length > 0 && (
           <div className="mt-3.5 pt-3.5 border-t border-[#565248]/15 space-y-2.5">
-            <div className="flex items-center justify-between text-[11px] font-serif uppercase tracking-wider text-[#565248] font-bold">
-              <span>Active Savings Log ({activeSavings.length}):</span>
+            <div className="flex items-center justify-between text-xs font-serif text-[#565248] font-bold">
+              <span>Savings Log ({activeSavings.length}):</span>
               <span className="text-[#5C6E4E] font-tabular">
                 Total: +{formatCurrency(loggedSavings, currency)}
               </span>

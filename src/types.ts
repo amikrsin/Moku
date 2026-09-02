@@ -23,7 +23,7 @@ export const CATEGORIES: Record<Category, CategoryInfo> = {
     subhead: 'Needs',
     description: 'Essential expenses to sustain daily life',
     examples: 'Groceries, rent, bills, transit, health',
-    icon: '🍔',
+    icon: '🏠',
     color: '#176B52',
     bgLight: 'rgba(23, 107, 82, 0.08)',
   },
@@ -68,9 +68,11 @@ export interface PlannedSector {
 
 export type BudgetSignal = 
   | 'NOT_STARTED' 
+  | 'IN_PROGRESS'
   | 'ON_TRACK' 
-  | 'PAID' 
   | 'WATCH' 
+  | 'PAID' 
+  | 'UNDER_PLAN' 
   | 'OVER_PLAN' 
   | 'UNPLANNED';
 

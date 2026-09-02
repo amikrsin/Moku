@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { UserProfile, PinSecurityConfig } from '../types';
-import { signInWithGoogle, continueLocally, signOut } from '../lib/firebase';
+import { UserProfile } from '../types';
+import { signInWithGoogle, continueLocally, signOut, isFirebaseConfigured } from '../lib/firebase';
 import { 
   X, 
   ShieldCheck, 
@@ -9,9 +9,12 @@ import {
   RotateCcw, 
   Lock, 
   AlertTriangle,
-  Check
+  Check,
+  CloudOff,
+  AlertCircle
 } from 'lucide-react';
 import { storage } from '../lib/storage';
+import { PinConfirmModal } from './PinConfirmModal';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -28,27 +31,34 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   user,
   onUserChanged,
   onOpenPinSetup,
-  currency = 'INR',
 }) => {
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [showPinConfirmModal, setShowPinConfirmModal] = useState(false);
 
   if (!isOpen) return null;
 
+  const firebaseReady = isFirebaseConfigured();
   const pinConfig = storage.getPinConfig();
   const isPinActive = pinConfig.isEnabled && !!pinConfig.pinHash;
 
   const handleGoogleSignIn = async () => {
+    setAuthError(null);
     setLoading(true);
     try {
       const profile = await signInWithGoogle();
       if (profile) {
         onUserChanged(profile);
+        onClose();
       }
+    } catch (err: any) {
+      console.error('Google Sign In failed:', err);
+      const msg = err?.message || 'Failed to sign in with Google. Please check your credentials and try again.';
+      setAuthError(msg);
     } finally {
       setLoading(false);
-      onClose();
     }
   };
 
@@ -75,14 +85,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleResetAllEntries = () => {
-    storage.resetAllData(true);
+  const handleResetAllEntries = async () => {
+    await storage.resetAllData(false);
     setResetSuccess(true);
     setTimeout(() => {
       setResetSuccess(false);
       setShowResetConfirm(false);
       onClose();
     }, 1200);
+  };
+
+  const handleConfirmResetClick = () => {
+    if (isPinActive) {
+      setShowPinConfirmModal(true);
+    } else {
+      handleResetAllEntries();
+    }
   };
 
   return (
@@ -109,13 +127,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
           <div>
             <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1A1C1A] dark:text-[#E3E5E1]">
-              Account & Data Sync
+              Account & Cloud Sync
             </h3>
             <p className="text-xs text-[#6E736F] dark:text-[#C1C7C0] mt-1 max-w-xs mx-auto leading-relaxed">
               MOKU works completely offline. Sign in to seamlessly sync your records across devices.
             </p>
           </div>
         </div>
+
+        {/* Cloud sync not configured banner */}
+        {!firebaseReady && (
+          <div className="p-3.5 rounded-2xl bg-[#F4F6F4] dark:bg-[#252925] border border-[#DDE2DD] dark:border-[#414842] flex items-start space-x-3">
+            <CloudOff className="w-4 h-4 text-[#6E736F] dark:text-[#C1C7C0] shrink-0 mt-0.5" />
+            <div className="text-xs space-y-0.5">
+              <p className="font-bold text-[#1A1C1A] dark:text-[#E3E5E1]">
+                Cloud sync not configured
+              </p>
+              <p className="text-[#6E736F] dark:text-[#C1C7C0] leading-relaxed">
+                Firebase environment variables are not set. Your records remain private and stored safely on this device.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Auth Error Banner */}
+        {authError && (
+          <div className="p-3.5 rounded-2xl bg-[#FCE8E6] dark:bg-[#3D1E1E] border border-[#BA1A1A]/30 flex items-start space-x-2.5 animate-in fade-in duration-150">
+            <AlertCircle className="w-4 h-4 text-[#BA1A1A] dark:text-[#FF897D] shrink-0 mt-0.5" />
+            <div className="text-xs text-[#BA1A1A] dark:text-[#FF897D]">
+              <p className="font-bold">Sign In Error</p>
+              <p className="mt-0.5 leading-relaxed">{authError}</p>
+            </div>
+          </div>
+        )}
 
         {/* Current Storage Mode */}
         <div className="bg-[#F7F8F7] dark:bg-[#252925] rounded-2xl border border-[#DDE2DD] dark:border-[#414842] p-4 text-xs flex items-center justify-between">
@@ -144,8 +188,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 id="google-signin-btn"
                 type="button"
                 onClick={handleGoogleSignIn}
-                disabled={loading}
-                className="w-full flex items-center justify-center space-x-3 bg-[#1A1C1A] hover:bg-[#2C302D] dark:bg-white dark:hover:bg-[#E3E5E1] text-white dark:text-[#121412] font-bold py-3.5 px-4 rounded-xl transition-all shadow-xs cursor-pointer text-sm disabled:opacity-50"
+                disabled={loading || !firebaseReady}
+                className={`w-full flex items-center justify-center space-x-3 bg-[#1A1C1A] hover:bg-[#2C302D] dark:bg-white dark:hover:bg-[#E3E5E1] text-white dark:text-[#121412] font-bold py-3.5 px-4 rounded-xl transition-all shadow-xs text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                   <path
@@ -165,7 +209,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     d="M12 23.5c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16.5C3.7 20.2 7.5 23.5 12 23.5z"
                   />
                 </svg>
-                <span>Sign in with Google</span>
+                <span>{loading ? 'Signing in...' : 'Sign in with Google'}</span>
               </button>
 
               {/* Continue locally option */}
@@ -251,10 +295,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <button
                       id="confirm-reset-all-btn"
                       type="button"
-                      onClick={handleResetAllEntries}
-                      className="flex-1 py-2 rounded-xl bg-[#BA1A1A] hover:bg-[#9e1414] text-white text-xs font-bold cursor-pointer transition-colors"
+                      onClick={handleConfirmResetClick}
+                      className="flex-1 py-2 rounded-xl bg-[#BA1A1A] hover:bg-[#9e1414] text-white text-xs font-bold cursor-pointer transition-colors flex items-center justify-center space-x-1.5"
                     >
-                      Yes, Reset Everything
+                      {isPinActive && <Lock className="w-3.5 h-3.5" />}
+                      <span>{isPinActive ? 'Authorize with PIN' : 'Yes, Reset Everything'}</span>
                     </button>
                     <button
                       type="button"
@@ -270,6 +315,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         </div>
 
+        {/* PIN Confirmation Modal for Reset */}
+        <PinConfirmModal
+          isOpen={showPinConfirmModal}
+          onClose={() => setShowPinConfirmModal(false)}
+          onConfirm={handleResetAllEntries}
+          title="PIN Required to Reset Data"
+          description="Enter your 4-digit PIN to authorize wiping all transactions and ledger records."
+        />
+
         {/* Footer note */}
         <div className="pt-2 border-t border-[#DDE2DD] dark:border-[#414842] text-xs text-[#6E736F] dark:text-[#C1C7C0] text-center space-y-0.5">
           <p className="flex items-center justify-center space-x-1.5 font-medium">
@@ -282,4 +336,3 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     </div>
   );
 };
-

@@ -3,24 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>MOKU — Mindful Finance</title>
-    <meta name="description" content="Calm personal finance and conscious spending journal." />
-    <meta property="og:title" content="MOKU — Mindful Finance" />
-    <meta property="og:description" content="Calm personal finance and conscious spending journal." />
+    <title>MOKU</title>
+    <meta name="description" content="Mindful personal expense tracker and budget planner." />
+    <meta property="og:title" content="MOKU" />
+    <meta property="og:description" content="Mindful personal expense tracker and budget planner." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#176B52" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="MOKU" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23176B52'/%3E%3Ctext x='50' y='64' font-family='sans-serif' font-size='42' font-weight='800' fill='%23FFFFFF' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
-    <!-- Modern Inter typography -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23176B52'/%3E%3Ccircle cx='256' cy='256' r='180' stroke='white' stroke-width='24' fill='none'/%3E%3Ccircle cx='256' cy='256' r='150' stroke='white' stroke-width='4' stroke-dasharray='10 10' fill='none'/%3E%3Ctext x='256' y='300' font-family='sans-serif' font-size='120' font-weight='bold' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23176B52'/%3E%3Ccircle cx='256' cy='256' r='180' stroke='white' stroke-width='24' fill='none'/%3E%3Ccircle cx='256' cy='256' r='150' stroke='white' stroke-width='4' stroke-dasharray='10 10' fill='none'/%3E%3Ctext x='256' y='300' font-family='sans-serif' font-size='120' font-weight='bold' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E" />
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   </head>
-  <body class="bg-[#F7F8F7] text-[#1A1C1A] antialiased selection:bg-[#176B52]/20 selection:text-[#176B52]">
+  <body class="bg-[var(--moku-background)] text-[var(--moku-text-primary)] antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

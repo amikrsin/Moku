@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Calendar, Check, ArrowRight, Tag } from 'lucide-react';
+import { X, Calendar, Check, ArrowRight, Tag, Sparkles } from 'lucide-react';
 import { CATEGORIES, Category, Expense, QUICK_CHIP_SUGGESTIONS, Plan } from '../types';
 import { generateUUID } from '../lib/storage';
+import { AppButton } from './ui/AppButton';
 
 interface QuickAddSheetProps {
   isOpen: boolean;
@@ -104,19 +105,19 @@ export function QuickAddSheet({
 
       {/* Bottom Sheet Modal */}
       <div 
-        className="relative w-full max-w-lg bg-white dark:bg-[#1B1E1B] rounded-t-[28px] p-6 shadow-2xl z-10 border-t border-[#DDE2DD] dark:border-[#414842] animate-in slide-in-from-bottom duration-300 max-h-[92vh] overflow-y-auto"
+        className="relative w-full max-w-lg bg-[var(--moku-surface)] rounded-t-[28px] p-6 shadow-2xl z-10 border-t border-[var(--moku-outline)] animate-in slide-in-from-bottom duration-300 max-h-[92vh] overflow-y-auto"
       >
         {/* Pull handle */}
-        <div className="w-12 h-1.5 bg-[#DDE2DD] dark:bg-[#414842] rounded-full mx-auto mb-4" />
+        <div className="w-12 h-1.5 bg-[var(--moku-outline)] rounded-full mx-auto mb-4" />
 
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold text-[#1A1C1A] dark:text-[#E3E5E1]">
+          <h2 className="text-xl font-bold text-[var(--moku-text-primary)]">
             Add Expense
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full text-[#6E736F] dark:text-[#C1C7C0] hover:bg-[#EEF1EE] dark:hover:bg-[#252925] transition-colors"
+            className="p-2 rounded-full text-[var(--moku-text-secondary)] hover:bg-[var(--moku-surface-secondary)] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -124,12 +125,12 @@ export function QuickAddSheet({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Large Amount Input */}
-          <div className="flex flex-col items-center justify-center py-3 bg-[#F7F8F7] dark:bg-[#252925] rounded-2xl border border-[#DDE2DD] dark:border-[#414842]">
-            <span className="text-[11px] font-medium text-[#6E736F] dark:text-[#C1C7C0] uppercase tracking-wider mb-0.5">
+          <div className="flex flex-col items-center justify-center py-3 bg-[var(--moku-surface-secondary)] rounded-2xl border border-[var(--moku-outline)]">
+            <span className="text-[11px] font-medium text-[var(--moku-text-secondary)] uppercase tracking-wider mb-0.5">
               Amount ({currency})
             </span>
-            <div className="flex items-center justify-center text-[#1A1C1A] dark:text-[#E3E5E1]">
-              <span className="text-3xl font-bold mr-1 text-[#176B52] dark:text-[#82D9B4]">
+            <div className="flex items-center justify-center text-[var(--moku-text-primary)]">
+              <span className="text-3xl font-bold mr-1 text-[var(--moku-primary)]">
                 {currencySymbol}
               </span>
               <input
@@ -144,17 +145,17 @@ export function QuickAddSheet({
                   setAmountStr(e.target.value);
                   if (errorMsg) setErrorMsg(null);
                 }}
-                className="w-48 text-4xl font-extrabold text-center bg-transparent border-none outline-none font-tabular text-[#1A1C1A] dark:text-[#E3E5E1] placeholder:text-[#6E736F]/40"
+                className="w-48 text-4xl font-extrabold text-center bg-transparent border-none outline-none font-tabular text-[var(--moku-text-primary)] placeholder:text-[var(--moku-text-secondary)]/40"
               />
             </div>
             {errorMsg && (
-              <p className="text-xs text-[#BA1A1A] font-medium mt-1">{errorMsg}</p>
+              <p className="text-xs text-[var(--moku-danger)] font-medium mt-1">{errorMsg}</p>
             )}
           </div>
 
           {/* Category Selector Grid */}
           <div>
-            <label className="block text-xs font-semibold text-[#6E736F] dark:text-[#C1C7C0] uppercase tracking-wider mb-2">
+            <label className="block text-xs font-semibold text-[var(--moku-text-secondary)] uppercase tracking-wider mb-2">
               Select Category
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -171,17 +172,17 @@ export function QuickAddSheet({
                     }}
                     className={`p-3 rounded-2xl border text-left transition-all flex items-start space-x-2.5 cursor-pointer ${
                       isSelected
-                        ? 'border-[#176B52] bg-[#D8F3E7] dark:border-[#82D9B4] dark:bg-[#214C3D] shadow-xs'
-                        : 'border-[#DDE2DD] dark:border-[#414842] bg-[#F7F8F7] dark:bg-[#252925] hover:border-[#176B52]/50'
+                        ? 'border-[var(--moku-primary)] bg-[var(--moku-primary-container)] text-[var(--moku-primary)] shadow-2xs'
+                        : 'border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-[var(--moku-text-primary)] hover:border-[var(--moku-primary)]/50'
                     }`}
                   >
-                    <span className="text-xl shrink-0">{cat.icon}</span>
+                    <span className="text-xl shrink-0 select-none">{cat.icon}</span>
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold text-[#1A1C1A] dark:text-[#E3E5E1] flex items-center justify-between">
+                      <div className="text-xs font-bold flex items-center justify-between">
                         <span>{cat.name}</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-[#176B52] dark:text-[#82D9B4]" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[var(--moku-primary)]" />}
                       </div>
-                      <div className="text-[10px] text-[#6E736F] dark:text-[#C1C7C0] truncate">
+                      <div className="text-[10px] text-[var(--moku-text-secondary)] truncate">
                         {cat.subhead}
                       </div>
                     </div>
@@ -194,15 +195,15 @@ export function QuickAddSheet({
           {/* Context-aware Sector Chips */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-[#6E736F] dark:text-[#C1C7C0] uppercase tracking-wider flex items-center space-x-1">
-                <Tag className="w-3 h-3 text-[#176B52] dark:text-[#82D9B4]" />
+              <label className="text-xs font-semibold text-[var(--moku-text-secondary)] uppercase tracking-wider flex items-center space-x-1">
+                <Tag className="w-3 h-3 text-[var(--moku-primary)]" />
                 <span>Planned Sector / Tag</span>
               </label>
               {selectedSector && (
                 <button
                   type="button"
                   onClick={() => setSelectedSector('')}
-                  className="text-[10px] text-[#6E736F] hover:text-[#BA1A1A]"
+                  className="text-[10px] text-[var(--moku-text-secondary)] hover:text-[var(--moku-danger)] cursor-pointer"
                 >
                   Clear tag
                 </button>
@@ -211,19 +212,23 @@ export function QuickAddSheet({
 
             <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto py-1">
               {combinedChips.map((chip) => {
+                const isPlanned = plannedNames.includes(chip);
                 const isSelected = selectedSector === chip;
                 return (
                   <button
                     key={chip}
                     type="button"
                     onClick={() => handleSelectChip(chip)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border cursor-pointer inline-flex items-center space-x-1 ${
                       isSelected
-                        ? 'bg-[#176B52] text-white border-[#176B52] dark:bg-[#82D9B4] dark:text-[#121412]'
-                        : 'bg-[#F7F8F7] dark:bg-[#252925] text-[#1A1C1A] dark:text-[#E3E5E1] border-[#DDE2DD] dark:border-[#414842] hover:border-[#176B52]/40'
+                        ? 'bg-[var(--moku-primary)] text-white border-[var(--moku-primary)]'
+                        : isPlanned
+                        ? 'bg-[var(--moku-surface-secondary)] border-[var(--moku-primary)]/30 text-[var(--moku-primary)] hover:bg-[var(--moku-primary-container)]'
+                        : 'bg-[var(--moku-surface-secondary)] text-[var(--moku-text-primary)] border-[var(--moku-outline)] hover:border-[var(--moku-primary)]/40'
                     }`}
                   >
-                    {chip}
+                    {isPlanned && <Sparkles className="w-2.5 h-2.5 opacity-80" />}
+                    <span>{chip}</span>
                   </button>
                 );
               })}
@@ -232,7 +237,7 @@ export function QuickAddSheet({
 
           {/* Description Input */}
           <div>
-            <label className="block text-xs font-semibold text-[#6E736F] dark:text-[#C1C7C0] uppercase tracking-wider mb-1">
+            <label className="block text-xs font-semibold text-[var(--moku-text-secondary)] uppercase tracking-wider mb-1">
               Description / Notes
             </label>
             <input
@@ -241,13 +246,13 @@ export function QuickAddSheet({
               placeholder="e.g. Weekly pantry restock, coffee with team..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full h-11 px-3.5 rounded-xl border border-[#DDE2DD] dark:border-[#414842] bg-[#F7F8F7] dark:bg-[#252925] text-xs text-[#1A1C1A] dark:text-[#E3E5E1] outline-none focus:border-[#176B52] dark:focus:border-[#82D9B4] transition-colors"
+              className="w-full h-11 px-3.5 rounded-xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-xs text-[var(--moku-text-primary)] outline-none focus:border-[var(--moku-primary)] transition-colors"
             />
           </div>
 
           {/* Date Selector */}
           <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center space-x-1.5 text-xs text-[#6E736F] dark:text-[#C1C7C0]">
+            <div className="flex items-center space-x-1.5 text-xs text-[var(--moku-text-secondary)]">
               <Calendar className="w-3.5 h-3.5" />
               <span>Date:</span>
             </div>
@@ -255,19 +260,21 @@ export function QuickAddSheet({
               type="date"
               value={dateStr}
               onChange={(e) => setDateStr(e.target.value)}
-              className="text-xs font-medium px-3 py-1 rounded-lg border border-[#DDE2DD] dark:border-[#414842] bg-[#F7F8F7] dark:bg-[#252925] text-[#1A1C1A] dark:text-[#E3E5E1] outline-none"
+              className="text-xs font-medium px-3 py-1 rounded-lg border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-[var(--moku-text-primary)] outline-none"
             />
           </div>
 
           {/* Save Button */}
-          <button
+          <AppButton
             id="quick-add-submit-btn"
             type="submit"
-            className="w-full h-13 rounded-2xl bg-[#176B52] hover:bg-[#125843] dark:bg-[#82D9B4] dark:hover:bg-[#6ec29e] text-white dark:text-[#121412] font-bold text-sm shadow-md active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center space-x-2"
+            fullWidth
+            size="lg"
+            icon={<ArrowRight className="w-4 h-4" />}
+            iconPosition="right"
           >
-            <span>Save Expense</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+            Save Expense
+          </AppButton>
         </form>
       </div>
     </div>

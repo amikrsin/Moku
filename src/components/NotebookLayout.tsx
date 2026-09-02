@@ -106,12 +106,12 @@ export const NotebookLayout: React.FC<NotebookLayoutProps> = ({
 
   const currentCurrencySymbol = SUPPORTED_CURRENCIES.find(c => c.code === currency)?.symbol || '₹';
 
-  const navItems: { id: NavTab; label: string; subLabel: string; icon: React.ReactNode; isCenter?: boolean }[] = [
-    { id: 'dashboard', label: 'Overview', subLabel: 'Summary', icon: <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" /> },
-    { id: 'ledger', label: 'Records', subLabel: 'History', icon: <ListOrdered className="w-4 h-4 sm:w-5 sm:h-5" /> },
-    { id: 'record', label: 'Record', subLabel: 'Add Entry', isCenter: true, icon: <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-[#EDE8DA]" /> },
-    { id: 'review', label: 'Review', subLabel: 'Reflect', icon: <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> },
-    { id: 'setup', label: 'Plan', subLabel: 'Budget', icon: <SlidersHorizontal className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  const navItems: { id: NavTab; label: string; icon: React.ReactNode; isCenter?: boolean }[] = [
+    { id: 'dashboard', label: 'Overview', icon: <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" /> },
+    { id: 'ledger', label: 'Records', icon: <ListOrdered className="w-4 h-4 sm:w-5 sm:h-5" /> },
+    { id: 'record', label: 'Record', isCenter: true, icon: <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-[#EDE8DA]" /> },
+    { id: 'review', label: 'Review', icon: <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> },
+    { id: 'setup', label: 'Plan', icon: <SlidersHorizontal className="w-4 h-4 sm:w-5 sm:h-5" /> },
   ];
 
   return (
@@ -343,9 +343,6 @@ export const NotebookLayout: React.FC<NotebookLayoutProps> = ({
                 </div>
                 <span className="text-[10px] sm:text-xs mt-0.5 tracking-tight font-sans">
                   {item.label}
-                </span>
-                <span className="text-[9px] font-serif opacity-70 leading-none">
-                  {item.subLabel}
                 </span>
               </button>
             );
