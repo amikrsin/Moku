@@ -29,6 +29,8 @@ import { MonthlyPlanSheet } from './components/MonthlyPlanSheet';
 import { SavingsModal } from './components/SavingsModal';
 import { AuthModal } from './components/AuthModal';
 import { ExportModal } from './components/ExportModal';
+import { PinSetupModal } from './components/PinSetupModal';
+import { PinLockScreen } from './components/PinLockScreen';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<MainTab>('home');
@@ -36,6 +38,7 @@ export default function App() {
   const [appState, setAppState] = useState<AppState>(() => storage.getLocalState());
   const [inboxItems, setInboxItems] = useState<InboxTransaction[]>(() => storage.getInboxTransactions());
   const [user, setUser] = useState<UserProfile>(() => storage.getUser());
+  const [isLocked, setIsLocked] = useState<boolean>(() => storage.isAppLocked());
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('moku_theme') === 'dark';
@@ -49,6 +52,7 @@ export default function App() {
   const [isSavingsModalOpen, setIsSavingsModalOpen] = useState<boolean>(false);
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
   const [isExportOpen, setIsExportOpen] = useState<boolean>(false);
+  const [isPinSetupOpen, setIsPinSetupOpen] = useState<boolean>(false);
   const [activeCurrency, setActiveCurrency] = useState<string>(() => getGlobalCurrency());
 
   // Apply dark mode class to html element
@@ -68,6 +72,7 @@ export default function App() {
       setAppState(storage.getLocalState());
       setInboxItems(storage.getInboxTransactions());
       setUser(storage.getUser());
+      setIsLocked(storage.isAppLocked());
     });
 
     storage.triggerSync();
@@ -213,6 +218,7 @@ export default function App() {
               onOpenSavingsPortfolio={() => setIsSavingsModalOpen(true)}
               onOpenAuthModal={() => setIsAuthOpen(true)}
               onOpenExportModal={() => setIsExportOpen(true)}
+              onOpenPinSetup={() => setIsPinSetupOpen(true)}
               plan={currentPlan}
               monthKey={selectedMonth}
             />
@@ -263,6 +269,7 @@ export default function App() {
         onClose={() => setIsAuthOpen(false)}
         user={user}
         currency={activeCurrency}
+        onOpenPinSetup={() => setIsPinSetupOpen(true)}
         onUserChanged={(updated) => {
           setUser(updated);
           storage.setUser(updated);
@@ -278,6 +285,17 @@ export default function App() {
         expenses={appState.expenses}
         currency={activeCurrency}
       />
+
+      {/* PIN Setup & Management Modal */}
+      <PinSetupModal
+        isOpen={isPinSetupOpen}
+        onClose={() => setIsPinSetupOpen(false)}
+      />
+
+      {/* Fullscreen PIN Lock Protection */}
+      {isLocked && (
+        <PinLockScreen onUnlocked={() => setIsLocked(false)} />
+      )}
     </div>
   );
 }

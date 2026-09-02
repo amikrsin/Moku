@@ -193,6 +193,17 @@ export interface SavingsEntry {
   deleted: boolean;
 }
 
+export interface PinSecurityConfig {
+  isEnabled: boolean;
+  pinHash?: string;
+  securityQuestion?: string;
+  securityAnswerHash?: string;
+  recoveryEmail?: string;
+  recoveryKey?: string;
+  lockTimeoutMinutes?: number;
+  lastUnlockedAt?: number;
+}
+
 export interface UserProfile {
   uid: string;
   displayName: string | null;

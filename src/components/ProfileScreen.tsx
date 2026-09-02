@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Calendar, 
   DollarSign, 
@@ -11,10 +11,14 @@ import {
   PiggyBank, 
   Layers, 
   UserCircle2,
-  Info
+  Info,
+  Lock,
+  RotateCcw,
+  AlertTriangle,
+  Check
 } from 'lucide-react';
 import { Plan, UserProfile, SUPPORTED_CURRENCIES } from '../types';
-import { formatCurrency } from '../lib/storage';
+import { formatCurrency, storage } from '../lib/storage';
 
 interface ProfileScreenProps {
   user: UserProfile;
@@ -26,6 +30,7 @@ interface ProfileScreenProps {
   onOpenSavingsPortfolio: () => void;
   onOpenAuthModal: () => void;
   onOpenExportModal: () => void;
+  onOpenPinSetup: () => void;
   plan: Plan | null;
   monthKey: string;
 }
@@ -40,9 +45,24 @@ export function ProfileScreen({
   onOpenSavingsPortfolio,
   onOpenAuthModal,
   onOpenExportModal,
+  onOpenPinSetup,
   plan,
   monthKey,
 }: ProfileScreenProps) {
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  const pinConfig = storage.getPinConfig();
+  const isPinActive = pinConfig.isEnabled && !!pinConfig.pinHash;
+
+  const handleResetData = () => {
+    storage.resetAllData(true);
+    setResetSuccess(true);
+    setTimeout(() => {
+      setResetSuccess(false);
+      setShowResetConfirm(false);
+    }, 1500);
+  };
   return (
     <div className="space-y-5 pb-8 animate-in fade-in duration-200">
       {/* Header */}
@@ -179,6 +199,38 @@ export function ProfileScreen({
           </span>
         </button>
 
+        {/* PIN Security & Lock Settings */}
+        <button
+          id="pin-security-profile-btn"
+          type="button"
+          onClick={onOpenPinSetup}
+          className="w-full p-4.5 flex items-center justify-between hover:bg-[#F7F8F7] dark:hover:bg-[#252925] transition-colors text-left cursor-pointer"
+        >
+          <div className="flex items-center space-x-3.5">
+            <div className="w-10 h-10 rounded-xl bg-[#EEF1EE] dark:bg-[#252925] flex items-center justify-center text-[#176B52] dark:text-[#82D9B4]">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-[#1A1C1A] dark:text-[#E3E5E1]">
+                PIN Security & Authorization
+              </div>
+              <div className="text-xs text-[#6E736F] dark:text-[#C1C7C0]">
+                {isPinActive ? 'PIN protection active · Tap to manage or change' : 'Set up 4-digit PIN to lock ledger'}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-1.5">
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+              isPinActive 
+                ? 'bg-[#D8F3E7] dark:bg-[#214C3D] text-[#176B52] dark:text-[#82D9B4]' 
+                : 'bg-[#EEF1EE] dark:bg-[#252925] text-[#6E736F] dark:text-[#C1C7C0]'
+            }`}>
+              {isPinActive ? 'Active' : 'Off'}
+            </span>
+            <ChevronRight className="w-4 h-4 text-[#6E736F]" />
+          </div>
+        </button>
+
         {/* Data Export & Backup */}
         <button
           type="button"
@@ -200,6 +252,65 @@ export function ProfileScreen({
           </div>
           <ChevronRight className="w-4 h-4 text-[#6E736F]" />
         </button>
+      </div>
+
+      {/* Danger Zone: Reset All Entries */}
+      <div className="bg-white dark:bg-[#1B1E1B] border border-[#DDE2DD] dark:border-[#414842] rounded-[24px] p-4.5 shadow-xs space-y-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-[#FCE8E6] dark:bg-[#3D1E1E] flex items-center justify-center text-[#BA1A1A] dark:text-[#FF897D]">
+            <RotateCcw className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-[#1A1C1A] dark:text-[#E3E5E1]">
+              Reset All Entries (Clean Slate)
+            </h4>
+            <p className="text-xs text-[#6E736F] dark:text-[#C1C7C0]">
+              Clear all demo records, expenses, and inbox items at once
+            </p>
+          </div>
+        </div>
+
+        {!showResetConfirm ? (
+          <button
+            type="button"
+            onClick={() => setShowResetConfirm(true)}
+            className="w-full py-2.5 px-3 rounded-xl border border-[#BA1A1A]/30 text-[#BA1A1A] dark:text-[#FF897D] hover:bg-[#FCE8E6] dark:hover:bg-[#3D1E1E] text-xs font-bold transition-colors cursor-pointer"
+          >
+            Reset All Data at Once
+          </button>
+        ) : (
+          <div className="p-3.5 rounded-xl bg-[#FCE8E6] dark:bg-[#3D1E1E] border border-[#BA1A1A]/40 space-y-2.5">
+            <div className="flex items-start space-x-2 text-xs text-[#BA1A1A] dark:text-[#FF897D]">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <p className="font-semibold leading-tight">
+                Are you sure? This will wipe all recorded transactions and reset to an empty clean ledger.
+              </p>
+            </div>
+            {resetSuccess ? (
+              <div className="text-xs font-bold text-[#176B52] dark:text-[#82D9B4] flex items-center space-x-1">
+                <Check className="w-3.5 h-3.5" />
+                <span>All entries wiped clean!</span>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={handleResetData}
+                  className="flex-1 py-2 rounded-lg bg-[#BA1A1A] text-white text-xs font-bold cursor-pointer hover:bg-[#931515]"
+                >
+                  Confirm Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(false)}
+                  className="px-3 py-2 rounded-lg bg-white dark:bg-[#252925] border border-[#565248]/20 text-xs font-semibold text-[#565248] dark:text-[#C1C7C0] cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Philosophy Card */}

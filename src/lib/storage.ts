@@ -13,8 +13,10 @@ import {
   Plan, 
   PlannedSector, 
   SavingsEntry, 
-  UserProfile 
+  UserProfile,
+  PinSecurityConfig
 } from '../types';
+import { getDefaultPinConfig } from './security';
 
 const STORAGE_KEY_PLANS = 'kakeibo_plans_v1';
 const STORAGE_KEY_EXPENSES = 'kakeibo_expenses_v1';
@@ -23,6 +25,8 @@ const STORAGE_KEY_INBOX = 'kakeibo_inbox_v1';
 const STORAGE_KEY_USER = 'kakeibo_user_v1';
 const STORAGE_KEY_LAST_SYNC = 'kakeibo_last_sync_v1';
 const STORAGE_KEY_GLOBAL_CURRENCY = 'kakeibo_global_currency_v1';
+const STORAGE_KEY_PIN_CONFIG = 'kakeibo_pin_config_v1';
+const STORAGE_KEY_PIN_LOCKED = 'kakeibo_pin_locked_v1';
 
 export function getGlobalCurrency(): string {
   try {
@@ -711,6 +715,88 @@ class StorageManager {
     this.saveExpense(newExpense);
     const updated = items.map(t => t.id === id ? { ...t, status: 'confirmed' as const } : t);
     this.saveInboxTransactions(updated);
+  }
+
+  // Reset all user data / Clean Slate
+  public resetAllData(createFreshCurrentMonth = true): void {
+    const curMonth = getCurrentMonthKey();
+    const globalCurr = getGlobalCurrency();
+
+    let freshPlans: Plan[] = [];
+    if (createFreshCurrentMonth) {
+      freshPlans = [
+        {
+          monthKey: curMonth,
+          income: 0,
+          savingsTarget: 0,
+          totalExpenses: 0,
+          improvementNotes: '',
+          categoryBudgets: {
+            survival: 0,
+            optional: 0,
+            culture: 0,
+            extra: 0,
+          },
+          currency: globalCurr,
+          reflection: '',
+          updatedAt: Date.now(),
+        },
+      ];
+    }
+
+    this.saveLocalState(freshPlans, [], []);
+    this.saveInboxTransactions([]);
+
+    // Clear remote state as well if online
+    this.triggerSync();
+    this.notify();
+  }
+
+  // PIN Security Configuration
+  public getPinConfig(): PinSecurityConfig {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_PIN_CONFIG);
+      if (raw) {
+        return JSON.parse(raw);
+      }
+    } catch {
+      // ignore
+    }
+    return getDefaultPinConfig();
+  }
+
+  public savePinConfig(config: PinSecurityConfig): void {
+    try {
+      localStorage.setItem(STORAGE_KEY_PIN_CONFIG, JSON.stringify(config));
+      this.notify();
+    } catch (e) {
+      console.error('Failed to save PIN config:', e);
+    }
+  }
+
+  public isAppLocked(): boolean {
+    const config = this.getPinConfig();
+    if (!config.isEnabled || !config.pinHash) return false;
+    try {
+      const lockedVal = sessionStorage.getItem(STORAGE_KEY_PIN_LOCKED);
+      if (lockedVal === 'unlocked') return false;
+    } catch {
+      // ignore
+    }
+    return true;
+  }
+
+  public setAppLocked(locked: boolean): void {
+    try {
+      if (locked) {
+        sessionStorage.removeItem(STORAGE_KEY_PIN_LOCKED);
+      } else {
+        sessionStorage.setItem(STORAGE_KEY_PIN_LOCKED, 'unlocked');
+      }
+      this.notify();
+    } catch {
+      // ignore
+    }
   }
 
   // Background Sync Engine (TRD §5)

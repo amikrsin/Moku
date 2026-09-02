@@ -158,44 +158,45 @@ export const SavingsModal: React.FC<SavingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-[#EDE8DA] border-2 border-[#565248]/30 rounded-2xl p-5 sm:p-7 shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-[#1B1E1B] text-[#1A1C1A] dark:text-[#E3E5E1] border border-[#DDE2DD] dark:border-[#414842] rounded-[28px] p-6 sm:p-7 shadow-2xl overflow-hidden space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-start justify-between border-b border-[#565248]/20 pb-3.5 mb-3.5 shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-[#5C6E4E] text-[#EDE8DA] flex items-center justify-center shadow-xs">
-              <PiggyBank className="w-5 h-5" />
+        <div className="flex items-start justify-between border-b border-[#DDE2DD] dark:border-[#414842] pb-4 shrink-0">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#D8F3E7] dark:bg-[#214C3D] border border-[#176B52]/20 dark:border-[#82D9B4]/30 text-[#176B52] dark:text-[#82D9B4] flex items-center justify-center shadow-xs">
+              <PiggyBank className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-serif text-lg sm:text-xl font-bold text-[#23211D] leading-snug">
+              <h3 className="text-xl font-bold tracking-tight text-[#1A1C1A] dark:text-[#E3E5E1] leading-snug">
                 Log Savings Deposit
               </h3>
-              <p className="text-xs text-[#565248] font-serif">
+              <p className="text-xs text-[#6E736F] dark:text-[#C1C7C0]">
                 Record actual money set aside to achieve your monthly target
               </p>
             </div>
           </div>
           <button
             id="close-savings-modal"
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-[#565248] hover:text-[#23211D] hover:bg-[#E5DFCE] transition-colors cursor-pointer"
+            className="p-2 text-[#6E736F] dark:text-[#C1C7C0] hover:text-[#1A1C1A] dark:hover:text-white rounded-xl hover:bg-[#EEF1EE] dark:hover:bg-[#252925] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Scrollable Form Area */}
-        <form onSubmit={handleSubmit} className="space-y-3.5 overflow-y-auto pr-1 flex-1">
+        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto pr-1 flex-1">
           {/* Amount input */}
-          <div className="bg-[#E5DFCE]/70 border border-[#565248]/25 rounded-xl p-3.5 space-y-1.5 shadow-2xs">
-            <label htmlFor="savings-amount" className="block text-xs font-serif font-bold text-[#23211D]">
-              Deposit Amount:
+          <div className="bg-[#F7F8F7] dark:bg-[#252925] border border-[#DDE2DD] dark:border-[#414842] rounded-2xl p-4 space-y-1.5 shadow-2xs">
+            <label htmlFor="savings-amount" className="block text-xs font-bold uppercase tracking-wider text-[#6E736F] dark:text-[#C1C7C0]">
+              Deposit Amount
             </label>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-serif text-lg text-[#5C6E4E] font-bold">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-[#176B52] dark:text-[#82D9B4] font-bold">
                 {currencySymbol}
               </span>
               <input
@@ -205,25 +206,25 @@ export const SavingsModal: React.FC<SavingsModalProps> = ({
                 min="1"
                 required
                 autoFocus
-                placeholder="e.g. 10000"
+                placeholder="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-[#EDE8DA] border-2 border-[#565248]/30 rounded-lg pl-10 pr-3 py-2 text-[#23211D] font-tabular text-xl font-bold focus:outline-hidden focus:border-[#5C6E4E] focus:ring-1 focus:ring-[#5C6E4E]"
+                className="w-full bg-white dark:bg-[#1B1E1B] border border-[#DDE2DD] dark:border-[#414842] rounded-xl pl-10 pr-3 py-2.5 text-[#1A1C1A] dark:text-[#E3E5E1] font-tabular text-2xl font-bold focus:outline-hidden focus:border-[#176B52] dark:focus:border-[#82D9B4]"
               />
             </div>
           </div>
 
           {/* Accordion Destination Selector */}
-          <div className="bg-[#E5DFCE]/60 border border-[#565248]/25 rounded-xl p-3 space-y-2 shadow-2xs">
+          <div className="bg-[#F7F8F7] dark:bg-[#252925] border border-[#DDE2DD] dark:border-[#414842] rounded-2xl p-3.5 space-y-2.5 shadow-2xs">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-serif font-bold text-[#23211D] flex items-center space-x-1.5">
-                <span>Savings Vehicle / Destination:</span>
+              <label className="text-xs font-bold uppercase tracking-wider text-[#6E736F] dark:text-[#C1C7C0]">
+                Savings Vehicle / Destination
               </label>
               <button
                 type="button"
                 id="toggle-destination-accordion"
                 onClick={() => setIsDestinationAccordionOpen(!isDestinationAccordionOpen)}
-                className="flex items-center space-x-1 text-xs text-[#5C6E4E] hover:text-[#4B5B3E] font-serif font-semibold cursor-pointer bg-[#EDE8DA] border border-[#565248]/20 px-2 py-0.5 rounded-md transition-colors"
+                className="flex items-center space-x-1 text-xs text-[#176B52] dark:text-[#82D9B4] font-semibold cursor-pointer bg-white dark:bg-[#1B1E1B] border border-[#DDE2DD] dark:border-[#414842] px-2.5 py-1 rounded-lg transition-colors"
               >
                 <span>{isDestinationAccordionOpen ? 'Collapse' : 'Change Vehicle'}</span>
                 {isDestinationAccordionOpen ? (
@@ -238,28 +239,28 @@ export const SavingsModal: React.FC<SavingsModalProps> = ({
             {!isDestinationAccordionOpen && (
               <div
                 onClick={() => setIsDestinationAccordionOpen(true)}
-                className="flex items-center justify-between p-2.5 rounded-lg border-2 border-[#5C6E4E] bg-[#EDE8DA] shadow-xs cursor-pointer transition-all hover:bg-[#E5DFCE]"
+                className="flex items-center justify-between p-3 rounded-xl border border-[#176B52] dark:border-[#82D9B4] bg-white dark:bg-[#1B1E1B] shadow-2xs cursor-pointer transition-all hover:bg-[#F7F8F7] dark:hover:bg-[#252925]"
               >
-                <div className="flex items-center space-x-2.5 min-w-0">
-                  <div className="p-1.5 rounded-md bg-[#E5DFCE] border border-[#565248]/15 shrink-0 shadow-2xs">
+                <div className="flex items-center space-x-3 min-w-0">
+                  <div className="p-2 rounded-xl bg-[#D8F3E7] dark:bg-[#214C3D] border border-[#176B52]/20 dark:border-[#82D9B4]/30 shrink-0 text-[#176B52] dark:text-[#82D9B4]">
                     {currentDestObj.icon}
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center space-x-1.5">
-                      <p className="font-serif font-bold text-xs sm:text-sm text-[#23211D] truncate">
+                    <div className="flex items-center space-x-2">
+                      <p className="font-bold text-sm text-[#1A1C1A] dark:text-[#E3E5E1] truncate">
                         {currentDestObj.label}
                       </p>
-                      <span className="text-[10px] bg-[#5C6E4E]/15 text-[#5C6E4E] border border-[#5C6E4E]/30 px-1.5 py-0.2 rounded-xs font-tabular font-semibold">
+                      <span className="text-[10px] bg-[#D8F3E7] dark:bg-[#214C3D] text-[#176B52] dark:text-[#82D9B4] border border-[#176B52]/20 dark:border-[#82D9B4]/30 px-2 py-0.5 rounded-md font-tabular font-bold">
                         {currentDestObj.suggestedReturn}
                       </span>
                     </div>
-                    <p className="text-[10px] text-[#565248] truncate">{currentDestObj.desc}</p>
+                    <p className="text-xs text-[#6E736F] dark:text-[#C1C7C0] truncate">{currentDestObj.desc}</p>
                   </div>
                 </div>
 
-                <span className="text-xs font-serif text-[#5C6E4E] font-bold flex items-center space-x-0.5 shrink-0 ml-2">
+                <span className="text-xs text-[#176B52] dark:text-[#82D9B4] font-bold flex items-center space-x-1 shrink-0 ml-2">
                   <span>Selected</span>
-                  <Check className="w-3.5 h-3.5" />
+                  <Check className="w-4 h-4" />
                 </span>
               </div>
             )}
@@ -274,21 +275,21 @@ export const SavingsModal: React.FC<SavingsModalProps> = ({
                       key={dest.id}
                       type="button"
                       onClick={() => handleDestinationSelect(dest.id)}
-                      className={`flex items-center space-x-2.5 p-2 rounded-lg border text-left transition-all text-xs cursor-pointer ${
+                      className={`flex items-center space-x-2.5 p-2.5 rounded-xl border text-left transition-all text-xs cursor-pointer ${
                         isSelected
-                          ? 'bg-[#EDE8DA] border-[#5C6E4E] ring-2 ring-[#5C6E4E] text-[#23211D] font-semibold shadow-xs'
-                          : 'bg-[#EDE8DA]/70 border-[#565248]/20 text-[#565248] hover:bg-[#EDE8DA]'
+                          ? 'bg-white dark:bg-[#1B1E1B] border-[#176B52] dark:border-[#82D9B4] ring-2 ring-[#176B52]/20 text-[#1A1C1A] dark:text-[#E3E5E1] font-bold shadow-xs'
+                          : 'bg-white/70 dark:bg-[#1B1E1B]/70 border-[#DDE2DD] dark:border-[#414842] text-[#6E736F] dark:text-[#C1C7C0] hover:bg-white dark:hover:bg-[#1B1E1B]'
                       }`}
                     >
-                      <div className="p-1.5 rounded-md bg-[#E5DFCE] border border-[#565248]/15 shrink-0 shadow-2xs">
+                      <div className="p-2 rounded-lg bg-[#EEF1EE] dark:bg-[#252925] shrink-0">
                         {dest.icon}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between">
-                          <p className="font-serif font-bold text-xs text-[#23211D] truncate">{dest.label}</p>
-                          {isSelected && <Check className="w-3 h-3 text-[#5C6E4E] shrink-0 ml-1" />}
+                          <p className="font-bold text-xs text-[#1A1C1A] dark:text-[#E3E5E1] truncate">{dest.label}</p>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-[#176B52] dark:text-[#82D9B4] shrink-0 ml-1" />}
                         </div>
-                        <p className="text-[10px] text-[#565248] truncate">{dest.desc}</p>
+                        <p className="text-[10px] text-[#6E736F] dark:text-[#C1C7C0] truncate">{dest.desc}</p>
                       </div>
                     </button>
                   );
@@ -300,8 +301,8 @@ export const SavingsModal: React.FC<SavingsModalProps> = ({
           {/* Custom Destination (if other) */}
           {destination === 'other' && (
             <div>
-              <label htmlFor="custom-destination" className="block text-xs font-serif font-bold text-[#23211D] mb-1">
-                Specific Destination Name:
+              <label htmlFor="custom-destination" className="block text-xs font-bold uppercase tracking-wider text-[#6E736F] dark:text-[#C1C7C0] mb-1.5">
+                Specific Destination Name
               </label>
               <input
                 id="custom-destination"
@@ -309,7 +310,7 @@ export const SavingsModal: React.FC<SavingsModalProps> = ({
                 value={destinationCustom}
                 onChange={(e) => setDestinationCustom(e.target.value)}
                 placeholder="e.g. PPF Account, Sovereign Gold Bond, NPS"
-                className="w-full bg-[#E5DFCE] border border-[#565248]/30 rounded-lg px-3 py-2 text-xs text-[#23211D] focus:outline-hidden focus:border-[#5C6E4E]"
+                className="w-full bg-[#F7F8F7] dark:bg-[#252925] border border-[#DDE2DD] dark:border-[#414842] rounded-xl px-3.5 py-2.5 text-xs text-[#1A1C1A] dark:text-[#E3E5E1] focus:outline-hidden focus:border-[#176B52]"
               />
             </div>
           )}
@@ -317,34 +318,34 @@ export const SavingsModal: React.FC<SavingsModalProps> = ({
           {/* Committed Return & Date in 2 columns */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="committed-return" className="block text-xs font-serif font-bold text-[#23211D] mb-1">
-                Expected Return (Optional):
+              <label htmlFor="committed-return" className="block text-xs font-bold uppercase tracking-wider text-[#6E736F] dark:text-[#C1C7C0] mb-1.5">
+                Expected Return (Optional)
               </label>
               <div className="relative">
-                <Percent className="w-3.5 h-3.5 text-[#565248] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Percent className="w-4 h-4 text-[#6E736F] dark:text-[#C1C7C0] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   id="committed-return"
                   type="text"
                   value={committedReturn}
                   onChange={(e) => setCommittedReturn(e.target.value)}
                   placeholder="e.g. 12% CAGR, 7.1% PPF"
-                  className="w-full bg-[#E5DFCE] border border-[#565248]/30 rounded-lg pl-8 pr-3 py-2 text-xs text-[#23211D] focus:outline-hidden focus:border-[#5C6E4E]"
+                  className="w-full bg-[#F7F8F7] dark:bg-[#252925] border border-[#DDE2DD] dark:border-[#414842] rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#1A1C1A] dark:text-[#E3E5E1] focus:outline-hidden focus:border-[#176B52]"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="savings-date" className="block text-xs font-serif font-bold text-[#23211D] mb-1">
-                Deposit Date:
+              <label htmlFor="savings-date" className="block text-xs font-bold uppercase tracking-wider text-[#6E736F] dark:text-[#C1C7C0] mb-1.5">
+                Deposit Date
               </label>
               <div className="relative">
-                <Calendar className="w-3.5 h-3.5 text-[#565248] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Calendar className="w-4 h-4 text-[#6E736F] dark:text-[#C1C7C0] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   id="savings-date"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-[#E5DFCE] border border-[#565248]/30 rounded-lg pl-8 pr-3 py-2 text-xs text-[#23211D] focus:outline-hidden focus:border-[#5C6E4E]"
+                  className="w-full bg-[#F7F8F7] dark:bg-[#252925] border border-[#DDE2DD] dark:border-[#414842] rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#1A1C1A] dark:text-[#E3E5E1] focus:outline-hidden focus:border-[#176B52]"
                 />
               </div>
             </div>
@@ -352,26 +353,26 @@ export const SavingsModal: React.FC<SavingsModalProps> = ({
 
           {/* Notes */}
           <div>
-            <label htmlFor="savings-notes" className="block text-xs font-serif font-bold text-[#23211D] mb-1">
-              Notes (Optional):
+            <label htmlFor="savings-notes" className="block text-xs font-bold uppercase tracking-wider text-[#6E736F] dark:text-[#C1C7C0] mb-1.5">
+              Notes (Optional)
             </label>
             <div className="relative">
-              <FileText className="w-3.5 h-3.5 text-[#565248] absolute left-3 top-1/2 -translate-y-1/2" />
+              <FileText className="w-4 h-4 text-[#6E736F] dark:text-[#C1C7C0] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 id="savings-notes"
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="e.g. Monthly SIP auto-debit, Emergency buffer"
-                className="w-full bg-[#E5DFCE] border border-[#565248]/30 rounded-lg pl-8 pr-3 py-2 text-xs text-[#23211D] focus:outline-hidden focus:border-[#5C6E4E]"
+                className="w-full bg-[#F7F8F7] dark:bg-[#252925] border border-[#DDE2DD] dark:border-[#414842] rounded-xl pl-9 pr-3 py-2.5 text-xs text-[#1A1C1A] dark:text-[#E3E5E1] focus:outline-hidden focus:border-[#176B52]"
               />
             </div>
           </div>
 
           {/* Submit button */}
-          <div className="pt-2 flex items-center justify-between border-t border-[#565248]/20 gap-2">
-            <p className="text-[11px] text-[#565248] flex items-center space-x-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#5C6E4E]" />
+          <div className="pt-2 flex items-center justify-between border-t border-[#DDE2DD] dark:border-[#414842] gap-2">
+            <p className="text-xs text-[#6E736F] dark:text-[#C1C7C0] flex items-center space-x-1.5">
+              <ShieldCheck className="w-4 h-4 text-[#176B52] dark:text-[#82D9B4]" />
               <span>Directly increases your monthly savings progress.</span>
             </p>
 
@@ -379,7 +380,7 @@ export const SavingsModal: React.FC<SavingsModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3 py-2 rounded-lg text-xs font-serif text-[#565248] hover:text-[#23211D] hover:bg-[#E5DFCE] transition-colors cursor-pointer"
+                className="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#6E736F] dark:text-[#C1C7C0] hover:text-[#1A1C1A] dark:hover:text-white hover:bg-[#EEF1EE] dark:hover:bg-[#252925] transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -388,7 +389,7 @@ export const SavingsModal: React.FC<SavingsModalProps> = ({
                 id="submit-savings-btn"
                 type="submit"
                 disabled={!amount || parseFloat(amount) <= 0}
-                className="flex items-center space-x-2 bg-[#5C6E4E] hover:bg-[#4B5B3E] disabled:opacity-50 text-[#EDE8DA] font-serif font-bold px-5 py-2.5 rounded-lg shadow-sm transition-all cursor-pointer text-xs sm:text-sm active:scale-98"
+                className="flex items-center space-x-2 bg-[#176B52] hover:bg-[#125843] dark:bg-[#82D9B4] dark:hover:bg-[#6ec29e] disabled:opacity-50 text-white dark:text-[#121412] font-bold px-5 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer text-xs sm:text-sm active:scale-98"
               >
                 <span>Save Record</span>
                 <ArrowRight className="w-4 h-4" />
@@ -399,13 +400,13 @@ export const SavingsModal: React.FC<SavingsModalProps> = ({
 
         {/* Success Confirmation Overlay */}
         {isSuccess && (
-          <div className="absolute inset-0 bg-[#EDE8DA]/95 flex items-center justify-center z-20 animate-in fade-in duration-150">
-            <div className="border-2 border-[#5C6E4E] rounded-2xl p-6 text-[#5C6E4E] font-serif font-bold text-center tracking-wide bg-[#EDE8DA] shadow-xl space-y-2">
-              <div className="w-10 h-10 rounded-full bg-[#5C6E4E] text-[#EDE8DA] flex items-center justify-center mx-auto">
+          <div className="absolute inset-0 bg-white/95 dark:bg-[#1B1E1B]/95 flex items-center justify-center z-20 animate-in fade-in duration-150">
+            <div className="border border-[#176B52]/30 dark:border-[#82D9B4]/30 rounded-2xl p-6 text-[#176B52] dark:text-[#82D9B4] font-bold text-center tracking-wide bg-[#D8F3E7] dark:bg-[#214C3D] shadow-xl space-y-2">
+              <div className="w-10 h-10 rounded-full bg-[#176B52] dark:bg-[#82D9B4] text-white dark:text-[#121412] flex items-center justify-center mx-auto">
                 <Check className="w-6 h-6" />
               </div>
-              <div className="text-lg">SAVINGS RECORDED</div>
-              <div className="text-xs font-sans text-[#23211D]">{formatCurrency(parseFloat(amount) || 0, currency)}</div>
+              <div className="text-base font-bold">SAVINGS RECORDED</div>
+              <div className="text-xs font-tabular text-[#1A1C1A] dark:text-[#E3E5E1]">{formatCurrency(parseFloat(amount) || 0, currency)}</div>
             </div>
           </div>
         )}
