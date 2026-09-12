@@ -19,7 +19,6 @@ import { AppCard } from './ui/AppCard';
 import { AppButton } from './ui/AppButton';
 import { MoneyAmount } from './ui/MoneyAmount';
 import { EmptyState } from './ui/EmptyState';
-import { PWAInstallButton } from './PWAInstallButton';
 
 interface HomeScreenProps {
   monthKey: string;
@@ -170,8 +169,6 @@ export function HomeScreen({
         </div>
 
         <div className="flex items-center space-x-2">
-          <PWAInstallButton variant="compact" />
-
           {inboxPendingCount > 0 && (
             <button
               onClick={onOpenInbox}

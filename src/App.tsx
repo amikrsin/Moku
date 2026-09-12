@@ -231,8 +231,9 @@ export default function App() {
         <BottomNavigation
           currentTab={currentTab}
           onSelectTab={setCurrentTab}
-          onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+          onOpenQuickAdd={() => setIsQuickAddOpen(prev => !prev)}
           inboxCount={pendingInboxCount}
+          isQuickAddOpen={isQuickAddOpen}
         />
       </main>
 

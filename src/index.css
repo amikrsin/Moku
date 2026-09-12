@@ -110,6 +110,17 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Remove number input spinner arrows */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+    opacity: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
   /* Safe area support for notched Android & iOS devices */
   .safe-area-top {
     padding-top: env(safe-area-inset-top, 0px);
