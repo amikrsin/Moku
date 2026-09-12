@@ -65,9 +65,14 @@ And in your build settings, configure the client environment variables:
 
 | Setting | Value |
 | :--- | :--- |
+| **Framework preset** | `Vite` |
 | **Build command** | `npm run build` |
 | **Deploy command** | `npx wrangler deploy` |
 | **Root directory** | `/` |
+
+> **Note on Bun vs. NPM in Cloudflare Pages:**
+> The project includes a standard `package-lock.json` so Cloudflare Pages builds reliably using `npm ci` (`nodejs@24`).
+> If you prefer using Bun in Cloudflare Pages, add the environment variable `BUN_VERSION=1.4.0` in your Cloudflare Pages dashboard under **Settings** > **Environment variables**.
 
 ---
 
