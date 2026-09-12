@@ -31,6 +31,7 @@ import { AuthModal } from './components/AuthModal';
 import { ExportModal } from './components/ExportModal';
 import { PinSetupModal } from './components/PinSetupModal';
 import { PinLockScreen } from './components/PinLockScreen';
+import { OfflineIndicator } from './components/OfflineIndicator';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<MainTab>('home');
@@ -162,6 +163,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#E8ECE8] dark:bg-[#0E100E] text-[#1A1C1A] dark:text-[#E3E5E1] flex justify-center selection:bg-[#176B52]/20 sm:py-6">
+      <OfflineIndicator />
       {/* Android Device Canvas */}
       <main className="w-full max-w-md min-h-screen sm:min-h-[860px] bg-[#F7F8F7] dark:bg-[#121412] relative overflow-x-hidden sm:rounded-[36px] sm:shadow-[0_25px_80px_rgba(0,0,0,0.18)] flex flex-col justify-between border border-[#DDE2DD]/50 dark:border-[#343B35]">
         {/* Main Content Area */}

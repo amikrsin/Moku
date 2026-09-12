@@ -19,6 +19,7 @@ import { AppCard } from './ui/AppCard';
 import { AppButton } from './ui/AppButton';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { PinConfirmModal } from './PinConfirmModal';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface ProfileScreenProps {
   user: UserProfile;
@@ -237,6 +238,9 @@ export function ProfileScreen({
             <ChevronRight className="w-4 h-4 text-[var(--moku-text-secondary)]" />
           </div>
         </button>
+
+        {/* PWA Install Tile */}
+        <PWAInstallButton variant="tile" />
 
         {/* Data Export & Backup */}
         <button

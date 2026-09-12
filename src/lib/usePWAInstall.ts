@@ -5,8 +5,17 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
+let globalDeferredPrompt: BeforeInstallPromptEvent | null = null;
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e: Event) => {
+    e.preventDefault();
+    globalDeferredPrompt = e as BeforeInstallPromptEvent;
+  });
+}
+
 export function usePWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(() => globalDeferredPrompt);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
 
@@ -22,14 +31,21 @@ export function usePWAInstall() {
     const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIOSDevice);
 
+    if (globalDeferredPrompt) {
+      setDeferredPrompt(globalDeferredPrompt);
+    }
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      const promptEvent = e as BeforeInstallPromptEvent;
+      globalDeferredPrompt = promptEvent;
+      setDeferredPrompt(promptEvent);
     };
 
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
+      globalDeferredPrompt = null;
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -42,19 +58,21 @@ export function usePWAInstall() {
   }, []);
 
   const install = async () => {
-    if (!deferredPrompt) return false;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    const promptToUse = deferredPrompt || globalDeferredPrompt;
+    if (!promptToUse) return false;
+    await promptToUse.prompt();
+    const { outcome } = await promptToUse.userChoice;
     if (outcome === 'accepted') {
       setIsInstalled(true);
       setDeferredPrompt(null);
+      globalDeferredPrompt = null;
       return true;
     }
     return false;
   };
 
   return {
-    isInstallable: !!deferredPrompt,
+    isInstallable: !!(deferredPrompt || globalDeferredPrompt),
     isInstalled,
     isIOS,
     install,

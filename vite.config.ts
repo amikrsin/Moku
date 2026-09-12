@@ -88,28 +88,80 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         devOptions: {
           enabled: true,
+          type: 'module',
         },
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'manifest.webmanifest'],
+        includeAssets: [
+          'favicon.png',
+          'apple-touch-icon.png',
+          'icon.svg',
+          'pwa-192x192.png',
+          'pwa-512x512.png',
+          'pwa-maskable-512x512.png',
+        ],
         manifest: {
-          name: 'MOKU',
+          id: '/',
+          name: 'MOKU - Mindful Kakeibo Budget',
           short_name: 'MOKU',
-          description: 'Mindful personal expense tracker and budget planner.',
+          description: 'Mindful Japanese Kakeibo budgeting and expense journal.',
           start_url: '/',
           scope: '/',
           display: 'standalone',
-          background_color: '#EDE8DA',
-          theme_color: '#EDE8DA',
+          orientation: 'portrait',
+          background_color: '#F7F8F7',
+          theme_color: '#176B52',
           icons: [
             {
-              src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23EDE8DA'/%3E%3Ccircle cx='256' cy='256' r='180' stroke='%23A8342A' stroke-width='24' fill='none'/%3E%3Ccircle cx='256' cy='256' r='150' stroke='%23A8342A' stroke-width='4' stroke-dasharray='10 10' fill='none'/%3E%3Ctext x='256' y='300' font-family='serif' font-size='120' font-weight='bold' fill='%23A8342A' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E",
+              src: '/pwa-192x192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: '/pwa-512x512.png',
               sizes: '512x512',
-              type: 'image/svg+xml',
-              purpose: 'any maskable',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: '/pwa-maskable-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
             },
           ],
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,json}'],
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'google-fonts-cache',
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60 * 60 * 24 * 365,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+            {
+              urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'gstatic-fonts-cache',
+                expiration: {
+                  maxEntries: 10,
+                  maxAgeSeconds: 60 * 60 * 24 * 365,
+                },
+                cacheableResponse: {
+                  statuses: [0, 200],
+                },
+              },
+            },
+          ],
         },
       }),
     ],
