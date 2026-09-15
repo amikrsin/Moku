@@ -77,6 +77,15 @@ export default function App() {
     });
 
     storage.triggerSync();
+
+    // Check for first-time user onboarding:
+    // When a user opens the app for the first time, automatically launch Monthly Plan & Budget
+    const hasSeenOnboarding = localStorage.getItem('moku_onboarding_shown_v1');
+    if (!hasSeenOnboarding) {
+      localStorage.setItem('moku_onboarding_shown_v1', 'true');
+      setIsPlanSheetOpen(true);
+    }
+
     return () => unsubscribe();
   }, []);
 

@@ -15,16 +15,72 @@ MOKU is configured as a full-stack **Cloudflare Workers + D1 Database + Static A
 
 ## 🚀 Setup & Deployment Steps
 
-### 1. Create Cloudflare D1 Database
+### Option A: Create via Cloudflare Web Dashboard (No CLI Required)
 
-In your terminal or Cloudflare Dashboard:
+You **can** create and set up `moku_db` directly in your browser without running any command-line tools:
+
+1. Log into your **[Cloudflare Dashboard](https://dash.cloudflare.com/)**.
+2. In the left-hand sidebar, navigate to **Storage & Databases** > **D1 SQL Database**.
+3. Click the blue **Create database** button.
+4. Enter the database name: `moku_db` (or any name you prefer) and click **Create**.
+5. Once created, Cloudflare displays your database overview. Copy the **Database ID** (a UUID string like `3f412345-6789-abcd-ef01-23456789abcd`).
+6. Click the **Console** tab inside your `moku_db` page on the dashboard.
+7. Paste the following SQL statements into the console and click **Execute**:
+
+```sql
+CREATE TABLE IF NOT EXISTS plans (
+  user_id TEXT NOT NULL,
+  month_key TEXT NOT NULL,
+  data TEXT NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, month_key)
+);
+
+CREATE TABLE IF NOT EXISTS expenses (
+  user_id TEXT NOT NULL,
+  id TEXT NOT NULL,
+  month_key TEXT NOT NULL,
+  data TEXT NOT NULL,
+  updated_at INTEGER NOT NULL,
+  deleted INTEGER DEFAULT 0,
+  PRIMARY KEY (user_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS savings_entries (
+  user_id TEXT NOT NULL,
+  id TEXT NOT NULL,
+  month_key TEXT NOT NULL,
+  data TEXT NOT NULL,
+  updated_at INTEGER NOT NULL,
+  deleted INTEGER DEFAULT 0,
+  PRIMARY KEY (user_id, id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_plans_user ON plans(user_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_user ON expenses(user_id);
+CREATE INDEX IF NOT EXISTS idx_savings_user ON savings_entries(user_id);
+```
+
+8. In your project's `wrangler.toml` (or your GitHub repo before deployment), update:
+```toml
+[[d1_databases]]
+binding = "DB"
+database_name = "moku_db"
+database_id = "<PASTE_YOUR_DATABASE_ID_FROM_DASHBOARD_HERE>"
+```
+
+---
+
+### Option B: Create via Wrangler CLI
+
+If you prefer using the terminal:
 
 ```bash
-# Create the D1 database
+# 1. Create the D1 database
 npx wrangler d1 create moku_db
 ```
 
-Copy the output `database_id` and update `wrangler.toml`:
+Copy the output `database_id` into `wrangler.toml`:
 
 ```toml
 [[d1_databases]]
@@ -33,15 +89,8 @@ database_name = "moku_db"
 database_id = "YOUR_ACTUAL_D1_DATABASE_ID_HERE"
 ```
 
-### 2. Run Database Schema Migrations
-
-Apply the table schema to your D1 database:
-
 ```bash
-# Local development
-npx wrangler d1 execute moku_db --local --file=./worker/schema.sql
-
-# Production remote database
+# 2. Run Database Schema Migrations
 npx wrangler d1 execute moku_db --remote --file=./worker/schema.sql
 ```
 

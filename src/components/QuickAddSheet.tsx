@@ -103,14 +103,14 @@ export function QuickAddSheet({
         onClick={onClose}
       />
 
-      {/* Bottom Sheet Modal docked right above the bottom navigation bar and centered to the mobile canvas */}
+      {/* Bottom Sheet Modal docked right above the bottom navigation bar (bottom-20) and horizontally centered */}
       <div 
-        className="relative w-full max-w-md bg-[var(--moku-surface)] rounded-t-[28px] px-5 pt-3.5 pb-24 shadow-[0_-10px_40px_rgba(0,0,0,0.18)] z-10 border-t border-x border-[var(--moku-outline)] animate-in slide-in-from-bottom duration-300 pointer-events-auto overflow-hidden"
+        className="relative w-full max-w-md bg-[var(--moku-surface)] rounded-t-[28px] px-5 pt-3 pb-5 mb-20 shadow-[0_-10px_40px_rgba(0,0,0,0.18)] z-10 border-t border-x border-[var(--moku-outline)] animate-in slide-in-from-bottom duration-300 pointer-events-auto max-h-[calc(100dvh-5.5rem)] overflow-y-auto"
       >
         {/* Pull handle */}
-        <div className="w-10 h-1 bg-[var(--moku-outline)] rounded-full mx-auto mb-3" />
+        <div className="w-10 h-1 bg-[var(--moku-outline)] rounded-full mx-auto mb-2" />
 
-        <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center justify-between mb-2">
           <div>
             <h2 className="text-lg font-bold text-[var(--moku-text-primary)] leading-tight">
               Add Expense
@@ -128,9 +128,9 @@ export function QuickAddSheet({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-2.5">
           {/* Large Amount Input */}
-          <div className="flex flex-col items-center justify-center py-2.5 px-4 bg-[var(--moku-surface-secondary)] rounded-2xl border border-[var(--moku-outline)]">
+          <div className="flex flex-col items-center justify-center py-2 px-4 bg-[var(--moku-surface-secondary)] rounded-2xl border border-[var(--moku-outline)]">
             <span className="text-[10px] font-bold text-[var(--moku-text-secondary)] uppercase tracking-wider mb-0.5">
               Amount ({currency})
             </span>

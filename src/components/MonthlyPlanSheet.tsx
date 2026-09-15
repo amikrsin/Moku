@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ArrowRight, ArrowLeft, Check, Sparkles, Plus, Trash2 } from 'lucide-react';
+import { X, ArrowRight, ArrowLeft, Check, Sparkles, Plus, Trash2, ChevronDown, ChevronUp, Layers } from 'lucide-react';
 import { Plan, CATEGORIES, Category, PlannedSector, DEFAULT_CATEGORY_SECTORS } from '../types';
 import { formatCurrency, formatMonthName, generateUUID } from '../lib/storage';
 import { AppButton } from './ui/AppButton';
@@ -48,6 +48,19 @@ export function MonthlyPlanSheet({
   });
   
   const [activeSectorTab, setActiveSectorTab] = useState<Category>('survival');
+  const [expandedCategory, setExpandedCategory] = useState<Category | null>('survival');
+  const [inlineSectorName, setInlineSectorName] = useState<Record<Category, string>>({
+    survival: '',
+    optional: '',
+    culture: '',
+    extra: '',
+  });
+  const [inlineSectorAmount, setInlineSectorAmount] = useState<Record<Category, string>>({
+    survival: '',
+    optional: '',
+    culture: '',
+    extra: '',
+  });
   const [newSectorName, setNewSectorName] = useState('');
   const [newSectorAmount, setNewSectorAmount] = useState('');
 
@@ -531,19 +544,20 @@ export function MonthlyPlanSheet({
               </div>
             </div>
 
-            {/* 4 Category Inputs with Sector Counts */}
-            <div className="space-y-2.5">
+            {/* 4 Category Inputs with Sub-sections (Sectors) management */}
+            <div className="space-y-3">
               {(Object.keys(CATEGORIES) as Category[]).map(catKey => {
                 const catInfo = CATEGORIES[catKey];
                 const catSectorList = sectors[catKey] || [];
                 const catSectorSum = getCategoryTotalFromSectors(catKey);
                 const val = catSectorList.length > 0 ? catSectorSum : (catBudgets[catKey] || 0);
                 const percentage = spendableBudget > 0 ? Math.round((val / spendableBudget) * 100) : 0;
+                const isExpanded = expandedCategory === catKey;
                 
                 return (
                   <div 
                     key={catKey}
-                    className="p-3.5 rounded-2xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] space-y-2"
+                    className="p-3.5 rounded-2xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] space-y-2.5 transition-all"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -562,9 +576,19 @@ export function MonthlyPlanSheet({
                           </span>
                         </div>
                       </div>
-                      <span className="text-xs font-bold text-[var(--moku-primary)]">
-                        {percentage}%
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-bold text-[var(--moku-primary)] font-tabular">
+                          {percentage}%
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedCategory(isExpanded ? null : catKey)}
+                          className="p-1 rounded-lg text-[var(--moku-text-secondary)] hover:text-[var(--moku-text-primary)] hover:bg-[var(--moku-surface)] transition-colors cursor-pointer"
+                          title={isExpanded ? "Collapse sub-sections" : "Expand sub-sections"}
+                        >
+                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex items-center px-3 h-11 rounded-xl bg-[var(--moku-surface)] border border-[var(--moku-outline)]">
@@ -598,6 +622,104 @@ export function MonthlyPlanSheet({
                         className="w-full text-base font-bold bg-transparent outline-none font-tabular text-[var(--moku-text-primary)]"
                       />
                     </div>
+
+                    {/* Sub-sections (Sectors) Accordion View */}
+                    {isExpanded && (
+                      <div className="pt-2 border-t border-[var(--moku-outline)]/60 space-y-2 animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-[var(--moku-text-secondary)] uppercase tracking-wider">
+                          <span>Sub-Sections & Budgets</span>
+                          <span>Sum: {formatCurrency(catSectorSum, currency)}</span>
+                        </div>
+
+                        {/* List of current sectors */}
+                        {catSectorList.length > 0 ? (
+                          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                            {catSectorList.map((sec) => (
+                              <div
+                                key={sec.id}
+                                className="flex items-center justify-between p-2 rounded-xl bg-[var(--moku-surface)] border border-[var(--moku-outline)] text-xs"
+                              >
+                                <span className="font-semibold text-[var(--moku-text-primary)] truncate max-w-[140px]">
+                                  {sec.name}
+                                </span>
+                                <div className="flex items-center space-x-1.5">
+                                  <span className="text-[11px] text-[var(--moku-text-secondary)] font-tabular">
+                                    {currencySymbol}
+                                  </span>
+                                  <input
+                                    type="number"
+                                    value={sec.plannedAmount || ''}
+                                    onChange={(e) => handleUpdateSectorAmount(catKey, sec.id, parseFloat(e.target.value) || 0)}
+                                    placeholder="0"
+                                    className="w-20 text-right font-bold text-xs font-tabular bg-transparent border border-[var(--moku-outline)]/70 rounded-md px-1.5 py-0.5 text-[var(--moku-text-primary)] outline-none focus:border-[var(--moku-primary)]"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveSector(catKey, sec.id)}
+                                    className="p-1 text-[var(--moku-text-secondary)] hover:text-[var(--moku-danger)] transition-colors cursor-pointer"
+                                    title="Delete sub-section"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-[var(--moku-text-secondary)] py-1 italic">
+                            No sub-sections added yet. Add your custom sub-section below (e.g. Rent, Grocery, WiFi).
+                          </p>
+                        )}
+
+                        {/* Inline Add Custom Sub-Section Box */}
+                        <div className="flex items-center space-x-1.5 pt-1">
+                          <input
+                            type="text"
+                            placeholder="Add sub-section (e.g. Rent, Groceries)..."
+                            value={inlineSectorName[catKey] || ''}
+                            onChange={(e) => setInlineSectorName(prev => ({ ...prev, [catKey]: e.target.value }))}
+                            className="flex-1 h-9 px-2.5 text-xs rounded-lg border border-[var(--moku-outline)] bg-[var(--moku-surface)] text-[var(--moku-text-primary)] outline-none focus:ring-1 focus:ring-[var(--moku-primary)] placeholder:text-[var(--moku-text-secondary)]/60"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Amt"
+                            value={inlineSectorAmount[catKey] || ''}
+                            onChange={(e) => setInlineSectorAmount(prev => ({ ...prev, [catKey]: e.target.value }))}
+                            className="w-20 h-9 px-2 text-xs font-tabular rounded-lg border border-[var(--moku-outline)] bg-[var(--moku-surface)] text-[var(--moku-text-primary)] outline-none focus:ring-1 focus:ring-[var(--moku-primary)]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const name = (inlineSectorName[catKey] || '').trim();
+                              const amt = parseFloat(inlineSectorAmount[catKey] || '0') || 0;
+                              if (!name) return;
+                              const newSector: PlannedSector = {
+                                id: generateUUID(),
+                                name,
+                                plannedAmount: amt,
+                                icon: catKey === 'survival' ? '🏠' : catKey === 'optional' ? '✨' : catKey === 'culture' ? '📚' : '⚡',
+                              };
+                              setSectors(prev => {
+                                const updated = [...(prev[catKey] || []), newSector];
+                                const newCatTotal = updated.reduce((sum, s) => sum + (s.plannedAmount || 0), 0);
+                                setCatBudgets(cb => ({ ...cb, [catKey]: newCatTotal }));
+                                return {
+                                  ...prev,
+                                  [catKey]: updated,
+                                };
+                              });
+                              setInlineSectorName(prev => ({ ...prev, [catKey]: '' }));
+                              setInlineSectorAmount(prev => ({ ...prev, [catKey]: '' }));
+                            }}
+                            className="h-9 px-2.5 rounded-lg bg-[var(--moku-primary)] text-white text-xs font-bold flex items-center space-x-1 cursor-pointer hover:opacity-90 transition-opacity shrink-0"
+                            title="Add sub-section"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -796,29 +918,37 @@ export function MonthlyPlanSheet({
             </div>
 
             {/* Add Custom Sector */}
-            <div className="flex items-center space-x-2 pt-1">
-              <input
-                type="text"
-                value={newSectorName}
-                onChange={(e) => setNewSectorName(e.target.value)}
-                placeholder="Custom sector (e.g. WiFi, Car Insurance)"
-                className="flex-1 h-10 px-3 text-xs rounded-xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-[var(--moku-text-primary)] outline-none focus:ring-1 focus:ring-[var(--moku-primary)]"
-              />
-              <input
-                type="number"
-                value={newSectorAmount}
-                onChange={(e) => setNewSectorAmount(e.target.value)}
-                placeholder="Amount"
-                className="w-24 h-10 px-2.5 text-xs font-tabular rounded-xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-[var(--moku-text-primary)] outline-none focus:ring-1 focus:ring-[var(--moku-primary)]"
-              />
-              <button
-                type="button"
-                onClick={() => handleAddCustomSector(activeSectorTab)}
-                className="h-10 px-3 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold flex items-center space-x-1 cursor-pointer shrink-0 hover:opacity-90"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add</span>
-              </button>
+            <div className="p-3 rounded-2xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] space-y-1.5">
+              <span className="text-[10px] font-bold text-[var(--moku-text-secondary)] uppercase tracking-wider block">
+                Add Custom Sub-Section to {CATEGORIES[activeSectorTab].name}
+              </span>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={newSectorName}
+                  onChange={(e) => setNewSectorName(e.target.value)}
+                  placeholder="e.g. Rent, Grocery, WiFi..."
+                  className="flex-1 h-10 px-3 text-xs rounded-xl border border-[var(--moku-outline)] bg-[var(--moku-surface)] text-[var(--moku-text-primary)] outline-none focus:ring-1 focus:ring-[var(--moku-primary)]"
+                />
+                <div className="flex items-center px-2 h-10 rounded-xl bg-[var(--moku-surface)] border border-[var(--moku-outline)] w-28 focus-within:ring-1 focus-within:ring-[var(--moku-primary)]">
+                  <span className="text-xs font-bold text-[var(--moku-text-secondary)] mr-1">{currencySymbol}</span>
+                  <input
+                    type="number"
+                    value={newSectorAmount}
+                    onChange={(e) => setNewSectorAmount(e.target.value)}
+                    placeholder="0"
+                    className="w-full text-xs font-bold bg-transparent outline-none font-tabular text-[var(--moku-text-primary)]"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleAddCustomSector(activeSectorTab)}
+                  className="h-10 px-3.5 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold flex items-center space-x-1 cursor-pointer shrink-0 hover:opacity-90 shadow-xs"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add</span>
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center space-x-2 pt-2">
