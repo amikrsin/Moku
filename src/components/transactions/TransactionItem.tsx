@@ -18,9 +18,12 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
 }) => {
   const catInfo = CATEGORIES[expense.category] || CATEGORIES.survival;
   const dateObj = new Date(expense.date);
+  const currentYear = new Date().getFullYear();
+  const txYear = dateObj.getFullYear();
   const formattedDate = dateObj.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
+    ...(txYear !== currentYear ? { year: 'numeric' } : {}),
   });
 
   return (

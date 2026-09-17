@@ -198,6 +198,7 @@ export interface SavingsEntry {
 export interface PinSecurityConfig {
   isEnabled: boolean;
   pinHash?: string;
+  pinSalt?: string;
   securityQuestion?: string;
   securityAnswerHash?: string;
   recoveryEmail?: string;

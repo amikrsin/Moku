@@ -9,7 +9,7 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "moku_db"
-database_id = "92468a2f-2325-42b6-8779-188f0f35a3c0"
+database_id = "moku-d1-database-id"
 
 [vars]
 NODE_VERSION = "20"

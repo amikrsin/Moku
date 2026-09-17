@@ -4,6 +4,7 @@ import { PinSecurityConfig } from '../types';
 import { 
   DEFAULT_SECURITY_QUESTIONS, 
   generateRecoveryKey, 
+  generateSalt,
   hashString 
 } from '../lib/security';
 import { storage } from '../lib/storage';
@@ -69,12 +70,14 @@ export function PinSetupModal({ isOpen, onClose, onPinConfigured }: PinSetupModa
   const handleSavePinProtection = async () => {
     setErrorMsg('');
     try {
-      const pinHash = await hashString(pin);
+      const pinSalt = generateSalt();
+      const pinHash = await hashString(pin, pinSalt);
       const answerHash = await hashString(securityAnswer);
 
       const newConfig: PinSecurityConfig = {
         isEnabled: true,
         pinHash,
+        pinSalt,
         securityQuestion: selectedQuestion,
         securityAnswerHash: answerHash,
         recoveryKey,

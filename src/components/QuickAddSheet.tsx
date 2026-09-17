@@ -96,16 +96,16 @@ export function QuickAddSheet({
   const currencySymbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : currency === 'JPY' ? '¥' : currency;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center pointer-events-none">
+    <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
       {/* Dimmed backdrop */}
       <div 
-        className="fixed inset-0 bg-black/45 backdrop-blur-xs transition-opacity animate-in fade-in duration-200 pointer-events-auto"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-200 pointer-events-auto"
         onClick={onClose}
       />
 
-      {/* Bottom Sheet Modal docked right above the bottom navigation bar (bottom-20) and horizontally centered */}
+      {/* Bottom Sheet Modal docked at screen bottom with generous safe padding */}
       <div 
-        className="relative w-full max-w-md bg-[var(--moku-surface)] rounded-t-[28px] px-5 pt-3 pb-5 mb-20 shadow-[0_-10px_40px_rgba(0,0,0,0.18)] z-10 border-t border-x border-[var(--moku-outline)] animate-in slide-in-from-bottom duration-300 pointer-events-auto max-h-[calc(100dvh-5.5rem)] overflow-y-auto"
+        className="relative w-full max-w-md bg-[var(--moku-surface)] rounded-t-[28px] px-5 pt-3 pb-8 sm:pb-9 shadow-[0_-12px_45px_rgba(0,0,0,0.22)] z-10 border-t border-x border-[var(--moku-outline)] animate-in slide-in-from-bottom duration-300 pointer-events-auto max-h-[calc(100dvh-2.5rem)] overflow-y-auto"
       >
         {/* Pull handle */}
         <div className="w-10 h-1 bg-[var(--moku-outline)] rounded-full mx-auto mb-2" />
@@ -132,7 +132,7 @@ export function QuickAddSheet({
           {/* Large Amount Input */}
           <div className="flex flex-col items-center justify-center py-2 px-4 bg-[var(--moku-surface-secondary)] rounded-2xl border border-[var(--moku-outline)]">
             <span className="text-[10px] font-bold text-[var(--moku-text-secondary)] uppercase tracking-wider mb-0.5">
-              Amount ({currency})
+              Amount ({currencySymbol})
             </span>
             <div className="flex items-center justify-center text-[var(--moku-text-primary)] w-full">
               <span className="text-2xl sm:text-3xl font-bold mr-1 text-[var(--moku-primary)] select-none">
@@ -275,12 +275,13 @@ export function QuickAddSheet({
           </div>
 
           {/* Save Button */}
-          <div className="pt-0.5">
+          <div className="pt-2 pb-1">
             <AppButton
               id="quick-add-submit-btn"
               type="submit"
               fullWidth
-              size="md"
+              size="lg"
+              className="h-12 text-sm font-semibold shadow-sm"
               icon={<ArrowRight className="w-4 h-4" />}
               iconPosition="right"
             >

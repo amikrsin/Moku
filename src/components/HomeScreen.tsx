@@ -8,7 +8,11 @@ import {
   Clock, 
   Inbox,
   Sparkles,
-  Calendar
+  Calendar,
+  Search,
+  X,
+  SlidersHorizontal,
+  ChevronUp
 } from 'lucide-react';
 import { Expense, Plan, SavingsEntry, UserProfile, CATEGORIES, Category } from '../types';
 import { formatCurrency, formatMonthName, computeCategorySectorBreakdown } from '../lib/storage';
@@ -36,6 +40,7 @@ interface HomeScreenProps {
   onOpenPlanSetup: () => void;
   onOpenSavingsModal: () => void;
   inboxPendingCount: number;
+  onDeleteExpense?: (id: string) => void;
 }
 
 export function HomeScreen({
@@ -54,6 +59,7 @@ export function HomeScreen({
   onOpenPlanSetup,
   onOpenSavingsModal,
   inboxPendingCount,
+  onDeleteExpense,
 }: HomeScreenProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<Category, boolean>>({
     survival: true,
@@ -118,12 +124,74 @@ export function HomeScreen({
     ? Math.min(100, Math.round((totalSaved / savingsTarget) * 100))
     : 0;
 
-  // Sorted recent activity
-  const recentTransactions = useMemo(() => {
-    return [...activeExpenses]
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
-      .slice(0, 6);
-  }, [activeExpenses]);
+  // Search & Filter State for Transaction History
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchScope, setSearchScope] = useState<'month' | 'all'>('month');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<Category | 'all'>('all');
+  const [showAllEntries, setShowAllEntries] = useState<boolean>(false);
+
+  // All un-deleted expenses across entire app
+  const allActiveExpenses = useMemo(() => {
+    return expenses.filter((e) => !e.deleted);
+  }, [expenses]);
+
+  // Base expenses according to selected scope (current month vs all past months)
+  const scopedExpenses = useMemo(() => {
+    return searchScope === 'all' ? allActiveExpenses : activeExpenses;
+  }, [searchScope, allActiveExpenses, activeExpenses]);
+
+  // Determine if search query or category filter is actively filtering
+  const isFiltering = searchQuery.trim().length > 0 || selectedCategoryFilter !== 'all';
+
+  // Filtered transactions matching query & category
+  const filteredTransactions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    return [...scopedExpenses]
+      .filter((e) => {
+        // Category pill filter
+        if (selectedCategoryFilter !== 'all' && e.category !== selectedCategoryFilter) {
+          return false;
+        }
+
+        if (!q) return true;
+
+        const catInfo = CATEGORIES[e.category];
+        const categoryName = (catInfo?.name || '').toLowerCase();
+        const categorySubhead = (catInfo?.subhead || '').toLowerCase();
+        const categoryKey = (e.category || '').toLowerCase();
+        const note = (e.note || '').toLowerCase();
+        const sectorName = (e.sectorName || '').toLowerCase();
+        const amountStr = String(e.amount);
+
+        return (
+          note.includes(q) ||
+          categoryName.includes(q) ||
+          categorySubhead.includes(q) ||
+          categoryKey.includes(q) ||
+          sectorName.includes(q) ||
+          amountStr.includes(q)
+        );
+      })
+      .sort((a, b) => {
+        const timeA = new Date(a.date).getTime() || a.createdAt || 0;
+        const timeB = new Date(b.date).getTime() || b.createdAt || 0;
+        return timeB - timeA;
+      });
+  }, [scopedExpenses, searchQuery, selectedCategoryFilter]);
+
+  // Total amount in current filtered view
+  const filteredTotal = useMemo(() => {
+    return filteredTransactions.reduce((sum, e) => sum + e.amount, 0);
+  }, [filteredTransactions]);
+
+  // Displayed items (top 5 default when not searching, or all when filtering/expanded)
+  const displayedTransactions = useMemo(() => {
+    if (isFiltering || showAllEntries) {
+      return filteredTransactions;
+    }
+    return filteredTransactions.slice(0, 5);
+  }, [filteredTransactions, isFiltering, showAllEntries]);
 
   // Greeting based on time of day
   const greeting = useMemo(() => {
@@ -369,12 +437,19 @@ export function HomeScreen({
         </div>
       </div>
 
-      {/* Recent Activity List */}
+      {/* Transaction History & Search Bar View */}
       <div className="space-y-3 pt-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[var(--moku-text-primary)]">
-            Recent Entries
-          </h2>
+          <div>
+            <h2 className="text-lg font-bold text-[var(--moku-text-primary)]">
+              Transaction History
+            </h2>
+            <p className="text-xs text-[var(--moku-text-secondary)]">
+              {searchScope === 'all' 
+                ? `All recorded expenses (${allActiveExpenses.length})` 
+                : `${formatMonthName(monthKey)} (${activeExpenses.length})`}
+            </p>
+          </div>
           <button
             onClick={onOpenQuickAdd}
             className="text-xs font-bold text-[var(--moku-primary)] flex items-center space-x-1 hover:underline cursor-pointer"
@@ -384,23 +459,190 @@ export function HomeScreen({
           </button>
         </div>
 
-        {recentTransactions.length === 0 ? (
+        {/* Search Input Bar */}
+        <div className="relative flex items-center">
+          <Search className="w-4 h-4 text-[var(--moku-text-secondary)] absolute left-3.5 pointer-events-none" />
+          <input
+            id="transaction-history-search-input"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (!showAllEntries) setShowAllEntries(true);
+            }}
+            placeholder="Search notes or category name..."
+            className="w-full h-11 pl-10 pr-10 text-xs sm:text-sm rounded-2xl bg-[var(--moku-surface)] text-[var(--moku-text-primary)] border border-[var(--moku-outline)] placeholder:text-[var(--moku-text-secondary)]/60 focus:outline-none focus:border-[var(--moku-primary)] focus:ring-1 focus:ring-[var(--moku-primary)] transition-all shadow-2xs"
+          />
+          {searchQuery && (
+            <button
+              id="clear-transaction-search-btn"
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 p-1 rounded-full text-[var(--moku-text-secondary)] hover:text-[var(--moku-text-primary)] hover:bg-[var(--moku-surface-secondary)] transition-colors cursor-pointer"
+              aria-label="Clear search query"
+              title="Clear search"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Scope Selector & Quick Filters */}
+        <div className="space-y-2">
+          {/* Scope Selector Pills and Result Counter */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="inline-flex p-1 bg-[var(--moku-surface-secondary)] rounded-xl border border-[var(--moku-outline)] text-xs">
+              <button
+                type="button"
+                id="search-scope-month-btn"
+                onClick={() => setSearchScope('month')}
+                className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                  searchScope === 'month'
+                    ? 'bg-[var(--moku-surface)] text-[var(--moku-primary)] font-bold shadow-2xs'
+                    : 'text-[var(--moku-text-secondary)] hover:text-[var(--moku-text-primary)]'
+                }`}
+              >
+                {formatMonthName(monthKey)}
+              </button>
+              <button
+                type="button"
+                id="search-scope-all-btn"
+                onClick={() => setSearchScope('all')}
+                className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                  searchScope === 'all'
+                    ? 'bg-[var(--moku-surface)] text-[var(--moku-primary)] font-bold shadow-2xs'
+                    : 'text-[var(--moku-text-secondary)] hover:text-[var(--moku-text-primary)]'
+                }`}
+              >
+                All Past ({allActiveExpenses.length})
+              </button>
+            </div>
+
+            {/* Match summary when filtering */}
+            {isFiltering && (
+              <span className="text-[11px] font-medium text-[var(--moku-text-secondary)] truncate">
+                {filteredTransactions.length} {filteredTransactions.length === 1 ? 'match' : 'matches'}
+                {filteredTransactions.length > 0 && (
+                  <span className="font-bold text-[var(--moku-text-primary)] ml-1">
+                    · {formatCurrency(filteredTotal, currency)}
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
+
+          {/* Quick Category Chips */}
+          <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setSelectedCategoryFilter('all')}
+              className={`px-2.5 py-1 rounded-xl text-xs font-medium shrink-0 transition-all cursor-pointer ${
+                selectedCategoryFilter === 'all'
+                  ? 'bg-[var(--moku-primary)] text-white dark:text-[#121412] font-semibold'
+                  : 'bg-[var(--moku-surface)] text-[var(--moku-text-secondary)] hover:text-[var(--moku-text-primary)] border border-[var(--moku-outline)]'
+              }`}
+            >
+              All Categories
+            </button>
+            {(Object.keys(CATEGORIES) as Category[]).map((catKey) => {
+              const cat = CATEGORIES[catKey];
+              const isSelected = selectedCategoryFilter === catKey;
+              return (
+                <button
+                  key={catKey}
+                  type="button"
+                  onClick={() => setSelectedCategoryFilter(isSelected ? 'all' : catKey)}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-medium shrink-0 flex items-center space-x-1 transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-[var(--moku-primary)] text-white dark:text-[#121412] font-semibold'
+                      : 'bg-[var(--moku-surface)] text-[var(--moku-text-secondary)] hover:text-[var(--moku-text-primary)] border border-[var(--moku-outline)]'
+                  }`}
+                >
+                  <span>{cat.icon}</span>
+                  <span>{cat.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Transactions list or Empty States */}
+        {isFiltering && filteredTransactions.length === 0 ? (
+          <div className="p-6 rounded-2xl bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] text-center space-y-3 animate-in fade-in duration-200">
+            <div className="w-10 h-10 rounded-full bg-[var(--moku-surface)] border border-[var(--moku-outline)] flex items-center justify-center mx-auto text-[var(--moku-text-secondary)]">
+              <Search className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[var(--moku-text-primary)]">
+                No matching expenses
+              </h3>
+              <p className="text-xs text-[var(--moku-text-secondary)] mt-1 max-w-xs mx-auto">
+                No expenses match &ldquo;{searchQuery || CATEGORIES[selectedCategoryFilter as Category]?.name}&rdquo; in {searchScope === 'month' ? formatMonthName(monthKey) : 'past history'}.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-2 pt-1">
+              {searchScope === 'month' && allActiveExpenses.length > activeExpenses.length && (
+                <button
+                  type="button"
+                  onClick={() => setSearchScope('all')}
+                  className="px-3 py-1.5 rounded-xl bg-[var(--moku-primary)] text-white dark:text-[#121412] text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  Search all past months
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategoryFilter('all');
+                }}
+                className="px-3 py-1.5 rounded-xl bg-[var(--moku-surface)] text-[var(--moku-text-primary)] border border-[var(--moku-outline)] text-xs font-semibold hover:bg-[var(--moku-surface-secondary)] transition-colors cursor-pointer"
+              >
+                Clear filter
+              </button>
+            </div>
+          </div>
+        ) : !isFiltering && scopedExpenses.length === 0 ? (
           <EmptyState
             icon={<Clock className="w-6 h-6" />}
-            title="No expenses recorded this month"
+            title={searchScope === 'month' ? "No expenses recorded this month" : "No expenses recorded yet"}
             description="Tap the + button to record a planned or unplanned expense."
             actionLabel="Add Expense"
             onAction={onOpenQuickAdd}
           />
         ) : (
           <div className="space-y-2">
-            {recentTransactions.map((tx) => (
+            {displayedTransactions.map((tx) => (
               <TransactionItem
                 key={tx.id}
                 expense={tx}
                 currency={currency}
+                onDelete={onDeleteExpense}
               />
             ))}
+
+            {/* Expand / Collapse toggle when not filtering and more than 5 entries */}
+            {!isFiltering && filteredTransactions.length > 5 && (
+              <div className="pt-1 text-center">
+                <button
+                  type="button"
+                  id="toggle-all-transactions-btn"
+                  onClick={() => setShowAllEntries((prev) => !prev)}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--moku-primary)] bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] hover:bg-[var(--moku-surface)] transition-all cursor-pointer shadow-2xs"
+                >
+                  <span>
+                    {showAllEntries 
+                      ? `Show recent 5 only` 
+                      : `View all ${filteredTransactions.length} expenses`}
+                  </span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      showAllEntries ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

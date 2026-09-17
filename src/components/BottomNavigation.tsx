@@ -21,7 +21,7 @@ export function BottomNavigation({
   return (
     <nav 
       aria-label="Bottom Navigation"
-      className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--moku-surface)]/95 backdrop-blur-md border-t border-[var(--moku-outline)] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] transition-colors"
+      className="fixed bottom-0 left-0 right-0 z-30 bg-[var(--moku-surface)]/95 backdrop-blur-md border-t border-[var(--moku-outline)] shadow-[0_-8px_30px_rgba(0,0,0,0.08)] transition-colors"
     >
       <div className="max-w-md mx-auto px-4 h-20 flex items-center justify-around relative">
         {/* Home Tab */}
@@ -70,11 +70,13 @@ export function BottomNavigation({
             id="nav-quick-add-btn"
             type="button"
             onClick={onOpenQuickAdd}
+            disabled={isQuickAddOpen}
+            tabIndex={isQuickAddOpen ? -1 : 0}
             className={`w-14 h-14 rounded-full bg-[var(--moku-primary)] hover:opacity-95 text-white dark:text-[#121412] flex items-center justify-center shadow-[0_6px_20px_rgba(23,107,82,0.35)] dark:shadow-[0_6px_20px_rgba(0,0,0,0.5)] ring-4 ring-[var(--moku-surface)] border border-[var(--moku-outline-variant)] active:scale-95 hover:scale-105 transition-all cursor-pointer ${
-              isQuickAddOpen ? 'rotate-45 bg-[var(--moku-danger)] ring-red-100 dark:ring-red-950/40 text-white' : ''
+              isQuickAddOpen ? 'opacity-0 pointer-events-none scale-75 invisible' : 'opacity-100'
             }`}
-            aria-label={isQuickAddOpen ? 'Close add expense' : 'Add expense or income'}
-            title={isQuickAddOpen ? 'Close add expense' : 'Add transaction'}
+            aria-label="Add transaction"
+            title="Add transaction"
           >
             <Plus className="w-7 h-7 stroke-[2.5] transition-transform duration-200" />
           </button>

@@ -70,8 +70,9 @@ export function PinConfirmModal({
     setIsAuthorizing(true);
 
     try {
-      const enteredHash = await hashString(candidatePin);
-      if (enteredHash === config.pinHash) {
+      const enteredHashWithSalt = await hashString(candidatePin, config.pinSalt);
+      const enteredHashWithoutSalt = config.pinSalt ? await hashString(candidatePin) : enteredHashWithSalt;
+      if (enteredHashWithSalt === config.pinHash || enteredHashWithoutSalt === config.pinHash) {
         setAuthSuccess(true);
         setIsAuthorizing(false);
         setTimeout(async () => {

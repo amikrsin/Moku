@@ -14,7 +14,8 @@ import {
   PlannedSector, 
   SavingsEntry, 
   UserProfile,
-  PinSecurityConfig
+  PinSecurityConfig,
+  SUPPORTED_CURRENCIES
 } from '../types';
 import { getDefaultPinConfig } from './security';
 import { getIdToken } from './firebase';
@@ -75,6 +76,12 @@ export function formatShortMonth(monthKey: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
+export function getCurrencySymbol(currencyCode = 'INR'): string {
+  if (!currencyCode || currencyCode === 'INR') return '₹';
+  const match = SUPPORTED_CURRENCIES.find((c) => c.code.toUpperCase() === currencyCode.toUpperCase());
+  return match?.symbol || currencyCode;
+}
+
 export function formatCurrency(amount: number, currencyCode = 'INR'): string {
   const localeMap: Record<string, string> = {
     INR: 'en-IN',
@@ -88,14 +95,23 @@ export function formatCurrency(amount: number, currencyCode = 'INR'): string {
   };
   const locale = localeMap[currencyCode] || (currencyCode === 'INR' ? 'en-IN' : 'en-US');
   try {
-    return new Intl.NumberFormat(locale, {
+    let formatted = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currencyCode,
+      currencyDisplay: 'narrowSymbol',
       maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
     }).format(amount);
+
+    if (currencyCode === 'INR') {
+      formatted = formatted.replace(/^INR\s?/, '₹').replace(/\s?INR$/, '₹');
+      if (!formatted.includes('₹')) {
+        formatted = `₹${formatted}`;
+      }
+    }
+    return formatted;
   } catch {
-    const symbol = currencyCode === 'INR' ? '₹' : currencyCode;
-    return `${symbol} ${amount.toLocaleString()}`;
+    const symbol = getCurrencySymbol(currencyCode);
+    return `${symbol}${amount.toLocaleString()}`;
   }
 }
 
@@ -460,11 +476,9 @@ class StorageManager {
       let expenses: Expense[] = rawExpenses ? JSON.parse(rawExpenses) : [];
       let savingsEntries: SavingsEntry[] = rawSavings ? JSON.parse(rawSavings) : [];
 
-      // Clean up any corrupt legacy entries (e.g. abnormal 48000 test entry or entries with empty/deleted artifacts)
+      // Sanitize expenses ensuring valid IDs and amounts
       const sanitizedExpenses = expenses.filter((e) => {
         if (!e || !e.id || typeof e.amount !== 'number' || isNaN(e.amount)) return false;
-        // Filter out rogue 48000 test artifact if present
-        if (e.id === '0428c8be-36dd-4c54-b658-584ed31daacc' || (e.amount === 48000 && !e.note)) return false;
         return true;
       });
 
@@ -701,18 +715,129 @@ class StorageManager {
     this.saveInboxTransactions(updated);
   }
 
-  public confirmInboxTransaction(id: string, category: Category, note?: string, sectorName?: string, sectorId?: string) {
+  public restoreInboxTransaction(id: string) {
+    const items = this.getInboxTransactions();
+    const updated = items.map(t => t.id === id ? { ...t, status: 'pending' as const } : t);
+    this.saveInboxTransactions(updated);
+  }
+
+  public deleteInboxTransaction(id: string) {
+    const items = this.getInboxTransactions();
+    const updated = items.filter(t => t.id !== id);
+    this.saveInboxTransactions(updated);
+  }
+
+  public clearReviewedInboxTransactions() {
+    const items = this.getInboxTransactions();
+    const updated = items.filter(t => t.status === 'pending');
+    this.saveInboxTransactions(updated);
+  }
+
+  public resetSampleInboxTransactions() {
+    const seedInbox: InboxTransaction[] = [
+      {
+        id: generateUUID(),
+        merchant: 'Zomato Food Delivery',
+        amount: 850,
+        type: 'expense',
+        source: 'UPI · Today · 8:35 PM',
+        suggestedCategory: 'optional',
+        timestamp: Date.now() - 3600000 * 2,
+        status: 'pending',
+      },
+      {
+        id: generateUUID(),
+        merchant: 'Groceries & Provisions',
+        amount: 1200,
+        type: 'expense',
+        source: 'UPI · Today · 12:10 PM',
+        suggestedCategory: 'survival',
+        timestamp: Date.now() - 3600000 * 7,
+        status: 'pending',
+      },
+      {
+        id: generateUUID(),
+        merchant: 'Monthly Salary Credited',
+        amount: 50000,
+        type: 'income',
+        source: 'HDFC Bank · 1 Sep',
+        timestamp: Date.now() - 86400000,
+        status: 'pending',
+      },
+    ];
+    this.saveInboxTransactions(seedInbox);
+    return seedInbox;
+  }
+
+  public confirmInboxIncome(id: string, monthKey: string, creditType: 'income' | 'otherIncome' = 'income', note?: string) {
     const items = this.getInboxTransactions();
     const target = items.find(t => t.id === id);
     if (!target) return;
 
+    const { plans } = this.getLocalState();
+    const targetMonth = monthKey || getCurrentMonthKey();
+    let targetPlan = plans.find(p => p.monthKey === targetMonth);
+
+    if (targetPlan) {
+      const updatedPlan: Plan = {
+        ...targetPlan,
+        income: creditType === 'income' ? (targetPlan.income || 0) + target.amount : targetPlan.income,
+        otherIncome: creditType === 'otherIncome' ? (targetPlan.otherIncome || 0) + target.amount : targetPlan.otherIncome,
+        updatedAt: Date.now(),
+      };
+      this.savePlan(updatedPlan);
+    } else {
+      const newPlan: Plan = {
+        monthKey: targetMonth,
+        income: target.amount,
+        savingsTarget: Math.round(target.amount * 0.2),
+        totalExpenses: Math.round(target.amount * 0.8),
+        improvementNotes: note || 'Conscious allocation.',
+        categoryBudgets: {
+          survival: Math.round(target.amount * 0.44),
+          optional: Math.round(target.amount * 0.18),
+          culture: Math.round(target.amount * 0.09),
+          extra: Math.round(target.amount * 0.09),
+        },
+        currency: getGlobalCurrency(),
+        reflection: '',
+        updatedAt: Date.now(),
+      };
+      this.savePlan(newPlan);
+    }
+
+    const updated = items.map(t => t.id === id ? { ...t, status: 'confirmed' as const } : t);
+    this.saveInboxTransactions(updated);
+  }
+
+  public confirmInboxTransaction(
+    id: string, 
+    category: Category, 
+    note?: string, 
+    sectorId?: string, 
+    sectorName?: string,
+    monthKey?: string,
+    amountOverride?: number
+  ) {
+    const items = this.getInboxTransactions();
+    const target = items.find(t => t.id === id);
+    if (!target) return;
+
+    const finalMonthKey = monthKey || getCurrentMonthKey();
+    const finalAmount = amountOverride !== undefined && amountOverride > 0 ? amountOverride : target.amount;
+
+    if (target.type === 'income') {
+      this.confirmInboxIncome(id, finalMonthKey, 'income', note || target.merchant);
+      return;
+    }
+
     // Convert to verified expense
     const newExpense: Expense = {
       id: generateUUID(),
-      monthKey: getCurrentMonthKey(),
-      amount: target.amount,
+      monthKey: finalMonthKey,
+      amount: finalAmount,
       category,
-      sectorId,
+      sectorId: sectorId || undefined,
       sectorName: sectorName || target.suggestedSectorName,
       note: note || target.merchant,
       date: new Date().toISOString(),
@@ -919,8 +1044,6 @@ class StorageManager {
     });
 
     remoteExpenses.forEach((re) => {
-      // Filter rogue 48000 entry if any in remote
-      if (re.id === '0428c8be-36dd-4c54-b658-584ed31daacc' || (re.amount === 48000 && !re.note)) return;
       if ((re.updatedAt || 0) <= lastResetTime || (re.createdAt || 0) <= lastResetTime) return;
       const le = expenseMap.get(re.id);
       if (!le || (re.updatedAt || 0) >= (le.updatedAt || 0)) {

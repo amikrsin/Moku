@@ -114,6 +114,11 @@ export default function App() {
     setAppState(storage.getLocalState());
   }, []);
 
+  const handleDeleteExpense = useCallback((id: string) => {
+    storage.softDeleteExpense(id);
+    setAppState(storage.getLocalState());
+  }, []);
+
   const handleSaveSavings = useCallback((newSavings: SavingsEntry) => {
     storage.saveSavingsEntry(newSavings);
     setAppState(storage.getLocalState());
@@ -124,15 +129,46 @@ export default function App() {
     category: Category, 
     note?: string,
     sectorId?: string,
-    sectorName?: string
+    sectorName?: string,
+    amountOverride?: number
   ) => {
-    storage.confirmInboxTransaction(id, category, note, sectorId, sectorName);
+    storage.confirmInboxTransaction(id, category, note, sectorId, sectorName, selectedMonth, amountOverride);
     setInboxItems(storage.getInboxTransactions());
     setAppState(storage.getLocalState());
-  }, []);
+  }, [selectedMonth]);
+
+  const handleConfirmInboxIncome = useCallback((
+    id: string,
+    creditType: 'income' | 'otherIncome' = 'income',
+    note?: string
+  ) => {
+    storage.confirmInboxIncome(id, selectedMonth, creditType, note);
+    setInboxItems(storage.getInboxTransactions());
+    setAppState(storage.getLocalState());
+  }, [selectedMonth]);
 
   const handleDismissInboxItem = useCallback((id: string) => {
     storage.dismissInboxTransaction(id);
+    setInboxItems(storage.getInboxTransactions());
+  }, []);
+
+  const handleRestoreInboxItem = useCallback((id: string) => {
+    storage.restoreInboxTransaction(id);
+    setInboxItems(storage.getInboxTransactions());
+  }, []);
+
+  const handleDeleteInboxItem = useCallback((id: string) => {
+    storage.deleteInboxTransaction(id);
+    setInboxItems(storage.getInboxTransactions());
+  }, []);
+
+  const handleClearReviewedInbox = useCallback(() => {
+    storage.clearReviewedInboxTransactions();
+    setInboxItems(storage.getInboxTransactions());
+  }, []);
+
+  const handleResetSampleInbox = useCallback(() => {
+    storage.resetSampleInboxTransactions();
     setInboxItems(storage.getInboxTransactions());
   }, []);
 
@@ -145,27 +181,12 @@ export default function App() {
     const current = appState.plans.find((p) => p.monthKey === selectedMonth);
     if (current) {
       storage.savePlan({ ...current, reflection: reflectionText, updatedAt: Date.now() });
+      setAppState(storage.getLocalState());
     } else {
-      const defaultPlan: Plan = {
-        monthKey: selectedMonth,
-        income: 50000,
-        savingsTarget: 10000,
-        totalExpenses: 40000,
-        improvementNotes: '',
-        categoryBudgets: {
-          survival: 20000,
-          optional: 10000,
-          culture: 5000,
-          extra: 5000,
-        },
-        currency: activeCurrency,
-        reflection: reflectionText,
-        updatedAt: Date.now(),
-      };
-      storage.savePlan(defaultPlan);
+      // Never fabricate synthetic budget data. Prompt user to initialize plan first.
+      setIsPlanSheetOpen(true);
     }
-    setAppState(storage.getLocalState());
-  }, [appState.plans, selectedMonth, activeCurrency]);
+  }, [appState.plans, selectedMonth]);
 
   const currentPlan = appState.plans.find((p) => p.monthKey === selectedMonth) || null;
   const pendingInboxCount = inboxItems.filter((i) => i.status === 'pending').length;
@@ -194,6 +215,7 @@ export default function App() {
               onOpenPlanSetup={() => setIsPlanSheetOpen(true)}
               onOpenSavingsModal={() => setIsSavingsModalOpen(true)}
               inboxPendingCount={pendingInboxCount}
+              onDeleteExpense={handleDeleteExpense}
             />
           )}
 
@@ -201,9 +223,15 @@ export default function App() {
             <InboxScreen
               inboxItems={inboxItems}
               onConfirmItem={handleConfirmInboxItem}
+              onConfirmIncome={handleConfirmInboxIncome}
               onDismissItem={handleDismissInboxItem}
+              onRestoreItem={handleRestoreInboxItem}
+              onDeleteItem={handleDeleteInboxItem}
+              onClearReviewed={handleClearReviewedInbox}
+              onResetSampleItems={handleResetSampleInbox}
               onAddIncomingItem={handleAddIncomingItem}
               currency={activeCurrency}
+              monthKey={selectedMonth}
               currentPlan={currentPlan}
             />
           )}
@@ -215,6 +243,7 @@ export default function App() {
               expenses={appState.expenses}
               onSaveReflection={handleSaveReflection}
               currency={activeCurrency}
+              onOpenPlanSetup={() => setIsPlanSheetOpen(true)}
             />
           )}
 
@@ -262,6 +291,7 @@ export default function App() {
         onClose={() => setIsPlanSheetOpen(false)}
         monthKey={selectedMonth}
         existingPlan={currentPlan}
+        allPlans={appState.plans}
         onSavePlan={handleSavePlan}
         currency={activeCurrency}
       />

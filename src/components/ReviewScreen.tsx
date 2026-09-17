@@ -14,6 +14,7 @@ interface ReviewScreenProps {
   expenses: Expense[];
   onSaveReflection: (reflectionText: string) => void;
   currency: string;
+  onOpenPlanSetup?: () => void;
 }
 
 export function ReviewScreen({
@@ -22,6 +23,7 @@ export function ReviewScreen({
   expenses,
   onSaveReflection,
   currency,
+  onOpenPlanSetup,
 }: ReviewScreenProps) {
   const [reflectionText, setReflectionText] = useState(plan?.reflection || '');
   const [wentWellText, setWentWellText] = useState('');
@@ -207,54 +209,72 @@ export function ReviewScreen({
           </h2>
         </div>
 
-        <form onSubmit={handleSave} className="space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-[var(--moku-text-secondary)] uppercase tracking-wider mb-1">
-              What went well with your money this month?
-            </label>
-            <textarea
-              value={wentWellText}
-              onChange={(e) => setWentWellText(e.target.value)}
-              placeholder="e.g. Cooked dinners regularly, stuck to my groceries budget..."
-              rows={2}
-              className="w-full p-3 rounded-xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-xs text-[var(--moku-text-primary)] outline-none resize-none focus:border-[var(--moku-primary)]"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-[var(--moku-text-secondary)] uppercase tracking-wider mb-1">
-              What will you adjust next month?
-            </label>
-            <textarea
-              value={reflectionText}
-              onChange={(e) => setReflectionText(e.target.value)}
-              placeholder="e.g. Review subscriptions, set a strict cap on weekend takeout..."
-              rows={3}
-              className="w-full p-3 rounded-xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-xs text-[var(--moku-text-primary)] outline-none resize-none focus:border-[var(--moku-primary)]"
-            />
-          </div>
-
-          <div className="pt-1 flex items-center justify-between">
-            {savedSuccess ? (
-              <span className="text-xs font-bold text-[var(--moku-primary)] flex items-center space-x-1">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Reflection saved</span>
-              </span>
-            ) : (
-              <span className="text-[11px] text-[var(--moku-text-secondary)]">
-                Saved locally &amp; synced
-              </span>
+        {!plan ? (
+          <div className="p-4 rounded-xl bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] space-y-3">
+            <p className="text-xs text-[var(--moku-text-secondary)] leading-relaxed">
+              To write and save your monthly review for {formatMonthName(monthKey)}, please set up your plan and budget first.
+            </p>
+            {onOpenPlanSetup && (
+              <AppButton
+                type="button"
+                size="sm"
+                onClick={onOpenPlanSetup}
+                icon={<Sparkles className="w-3.5 h-3.5" />}
+              >
+                Begin {formatMonthName(monthKey)} Plan
+              </AppButton>
             )}
-
-            <AppButton
-              type="submit"
-              size="md"
-              icon={<Sparkles className="w-3.5 h-3.5" />}
-            >
-              Save Reflection
-            </AppButton>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={handleSave} className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-[var(--moku-text-secondary)] uppercase tracking-wider mb-1">
+                What went well with your money this month?
+              </label>
+              <textarea
+                value={wentWellText}
+                onChange={(e) => setWentWellText(e.target.value)}
+                placeholder="e.g. Cooked dinners regularly, stuck to my groceries budget..."
+                rows={2}
+                className="w-full p-3 rounded-xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-xs text-[var(--moku-text-primary)] outline-none resize-none focus:border-[var(--moku-primary)]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[var(--moku-text-secondary)] uppercase tracking-wider mb-1">
+                What will you adjust next month?
+              </label>
+              <textarea
+                value={reflectionText}
+                onChange={(e) => setReflectionText(e.target.value)}
+                placeholder="e.g. Review subscriptions, set a strict cap on weekend takeout..."
+                rows={3}
+                className="w-full p-3 rounded-xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-xs text-[var(--moku-text-primary)] outline-none resize-none focus:border-[var(--moku-primary)]"
+              />
+            </div>
+
+            <div className="pt-1 flex items-center justify-between">
+              {savedSuccess ? (
+                <span className="text-xs font-bold text-[var(--moku-primary)] flex items-center space-x-1">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Reflection saved</span>
+                </span>
+              ) : (
+                <span className="text-[11px] text-[var(--moku-text-secondary)]">
+                  Saved locally &amp; synced
+                </span>
+              )}
+
+              <AppButton
+                type="submit"
+                size="md"
+                icon={<Sparkles className="w-3.5 h-3.5" />}
+              >
+                Save Reflection
+              </AppButton>
+            </div>
+          </form>
+        )}
       </AppCard>
     </div>
   );

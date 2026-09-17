@@ -8,7 +8,7 @@ import {
   X
 } from 'lucide-react';
 import { PinSecurityConfig } from '../types';
-import { hashString } from '../lib/security';
+import { hashString, generateSalt } from '../lib/security';
 import { storage } from '../lib/storage';
 import { AppButton } from './ui/AppButton';
 
@@ -49,8 +49,9 @@ export function PinLockScreen({ onUnlocked }: PinLockScreenProps) {
 
   const verifyEnteredPin = async (enteredPin: string) => {
     try {
-      const enteredHash = await hashString(enteredPin);
-      if (enteredHash === config.pinHash) {
+      const enteredHashWithSalt = await hashString(enteredPin, config.pinSalt);
+      const enteredHashWithoutSalt = config.pinSalt ? await hashString(enteredPin) : enteredHashWithSalt;
+      if (enteredHashWithSalt === config.pinHash || enteredHashWithoutSalt === config.pinHash) {
         storage.setAppLocked(false);
         onUnlocked();
       } else {
@@ -122,10 +123,12 @@ export function PinLockScreen({ onUnlocked }: PinLockScreenProps) {
     }
 
     try {
-      const pinHash = await hashString(newPin);
+      const pinSalt = generateSalt();
+      const pinHash = await hashString(newPin, pinSalt);
       storage.savePinConfig({
         ...config,
         pinHash,
+        pinSalt,
         lastUnlockedAt: Date.now(),
       });
       storage.setAppLocked(false);
