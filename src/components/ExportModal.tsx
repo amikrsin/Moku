@@ -237,7 +237,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                 {activeTab === 'export'
                   ? (isLicensed
                       ? 'Export spreadsheets or download complete system backup directly to your device.'
-                      : 'File downloads locked in Demo Mode. Activate your Etsy License Key to unlock.')
+                      : 'File downloads locked in Demo Mode. Activate your License Key to unlock.')
                   : 'Restore and validate past backup JSON files with integrity checks.'}
               </p>
             </div>
@@ -536,7 +536,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
             {activeTab === 'export'
               ? (isLicensed
                   ? 'All data stays on your local device. No telemetry.'
-                  : 'Enter your paid Etsy License Key to enable file downloads.')
+                  : 'Enter your paid License Key to enable file downloads.')
               : 'Backup files are validated client-side in browser memory.'}
           </div>
         </div>

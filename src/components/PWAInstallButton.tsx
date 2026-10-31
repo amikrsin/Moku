@@ -137,7 +137,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
               <div className="text-xs text-[var(--moku-text-secondary)]">
                 {isLicensed
                   ? 'Add to your home screen for offline use and fast launch'
-                  : 'Enter your paid Etsy License Key to unlock app download'}
+                  : 'Enter your paid License Key to unlock app download'}
               </div>
             </div>
           </div>
@@ -185,7 +185,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             <p className="text-[11px] text-[var(--moku-text-secondary)] leading-tight">
               {isLicensed
                 ? 'Enjoy offline access, full-screen view, and lightning-fast entries.'
-                : 'Try all features in browser. Unlock with your Etsy License Key to download the app.'}
+                : 'Try all features in browser. Unlock with your License Key to download the app.'}
             </p>
           </div>
         </div>

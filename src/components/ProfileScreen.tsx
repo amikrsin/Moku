@@ -312,10 +312,10 @@ export function ProfileScreen({
           </span>
         </button>
 
-        {/* Private Etsy Seller Toolkit — ONLY visible when Seller Admin mode is unlocked */}
+        {/* Private Seller Toolkit — ONLY visible when Seller Admin mode is unlocked */}
         {licenseState.isSellerAdmin && (
           <button
-            id="profile-etsy-seller-btn"
+            id="profile-seller-btn"
             type="button"
             onClick={() => {
               setLicenseModalTab('seller');
@@ -324,12 +324,12 @@ export function ProfileScreen({
             className="w-full p-4.5 flex items-center justify-between hover:bg-[var(--moku-surface-secondary)] transition-colors text-left cursor-pointer"
           >
             <div className="flex items-center space-x-3.5">
-              <div className="w-10 h-10 rounded-xl bg-[#F1641E]/15 flex items-center justify-center text-[#F1641E]">
+              <div className="w-10 h-10 rounded-xl bg-[var(--moku-primary)]/15 flex items-center justify-center text-[var(--moku-primary)]">
                 <ShoppingBag className="w-5 h-5" />
               </div>
               <div>
                 <div className="text-sm font-bold text-[var(--moku-text-primary)]">
-                  Etsy Seller Toolkit (Admin Only)
+                  Seller &amp; Distribution Toolkit (Admin Only)
                 </div>
                 <div className="text-xs text-[var(--moku-text-secondary)]">
                   Hidden from general users · Manage Demo &amp; Paid Links
@@ -463,7 +463,7 @@ export function ProfileScreen({
         description="Enter your 4-digit PIN to authorize wiping all data and resetting your financial records."
       />
 
-      {/* License Unlock & Etsy Seller Hub Modal */}
+      {/* License Unlock & Seller Hub Modal */}
       <LicenseUnlockModal
         isOpen={showLicenseModal}
         onClose={() => setShowLicenseModal(false)}

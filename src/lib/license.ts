@@ -95,7 +95,7 @@ export function verifyAndActivateKey(inputKey: string): {
 } {
   const clean = inputKey.trim().toUpperCase();
   if (!clean) {
-    return { success: false, message: 'Please enter a valid Etsy License Key.' };
+    return { success: false, message: 'Please enter a valid License Key.' };
   }
 
   // Secret Seller Passcode entered inside the License Key box unlocks Seller Hub!
@@ -106,7 +106,7 @@ export function verifyAndActivateKey(inputKey: string): {
     return {
       success: true,
       isSellerUnlocked: true,
-      message: 'Seller Admin Hub Unlocked! Only you can see the Etsy Seller controls now.',
+      message: 'Seller Admin Hub Unlocked! Only you can see the Seller controls now.',
     };
   }
 
@@ -127,7 +127,7 @@ export function verifyAndActivateKey(inputKey: string): {
 
   return {
     success: false,
-    message: 'Invalid License Key. Please check your Etsy Order Receipt PDF or message the seller.',
+    message: 'Invalid License Key. Please check your order confirmation receipt or contact support.',
   };
 }
 

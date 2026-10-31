@@ -111,7 +111,7 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
     }
   };
 
-  const handleDownloadEtsyReceiptTemplate = () => {
+  const handleDownloadReceiptTemplate = () => {
     const htmlContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -160,7 +160,7 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'MOKU_Etsy_Buyer_Delivery_Card.html';
+    a.download = 'MOKU_Buyer_Delivery_Card.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -291,19 +291,28 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
                   </div>
                 )}
 
-                {/* Buy on Etsy CTA */}
+                {/* Buy License Key CTA */}
                 <div className="pt-2 border-t border-[var(--moku-outline)] space-y-2.5">
                   <p className="text-xs text-[var(--moku-text-secondary)] text-center">
                     Don&apos;t have a license key yet? Purchase the full lifetime app to unlock downloading on Android, iOS &amp; Desktop:
                   </p>
                   <a
-                    href={license.etsyShopUrl || 'https://www.etsy.com'}
-                    target="_blank"
+                    href={license.etsyShopUrl && license.etsyShopUrl !== 'https://www.etsy.com' ? license.etsyShopUrl : undefined}
+                    target={license.etsyShopUrl && license.etsyShopUrl !== 'https://www.etsy.com' ? '_blank' : undefined}
                     rel="noopener noreferrer"
-                    className="w-full py-2.5 px-4 rounded-xl bg-[#F1641E] hover:bg-[#d95616] text-white text-xs font-bold flex items-center justify-center space-x-2 transition-colors shadow-xs"
+                    onClick={(e) => {
+                      if (!license.etsyShopUrl || license.etsyShopUrl === 'https://www.etsy.com') {
+                        e.preventDefault();
+                        setFeedback({
+                          type: 'error',
+                          text: 'Please enter your license key from your order confirmation or purchase receipt above.',
+                        });
+                      }
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl bg-[var(--moku-primary)] hover:opacity-95 text-[var(--moku-on-primary)] text-xs font-bold flex items-center justify-center space-x-2 transition-all shadow-xs cursor-pointer"
                   >
                     <ShoppingBag className="w-4 h-4" />
-                    <span>Buy Full Version &amp; License Key on Etsy</span>
+                    <span>Buy Full Version &amp; License Key</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 </div>
@@ -345,7 +354,7 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
             )}
           </div>
         ) : (
-          /* PRIVATE ETSY SELLER HUB TAB (Hidden from general users) */
+          /* PRIVATE SELLER HUB TAB (Hidden from general users) */
           <div className="space-y-4">
             <div className="p-3.5 rounded-2xl bg-[var(--moku-primary-container)]/60 border border-[var(--moku-primary)]/25 space-y-1.5">
               <div className="flex items-center justify-between">
@@ -425,13 +434,13 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
 
               <div>
                 <label className="block text-[11px] font-bold text-[var(--moku-text-secondary)] uppercase tracking-wider mb-1">
-                  Your Etsy Shop / Listing URL
+                  Your Store / Purchase Link
                 </label>
                 <input
                   type="url"
                   value={etsyUrl}
                   onChange={(e) => setEtsyUrl(e.target.value)}
-                  placeholder="https://www.etsy.com/shop/YourShopName"
+                  placeholder="https://yourstore.com/product-link"
                   className="w-full px-3 py-2 rounded-xl bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] text-xs text-[var(--moku-text-primary)]"
                 />
               </div>
@@ -440,7 +449,7 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
                 type="submit"
                 className="w-full py-2 rounded-xl bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] hover:border-[var(--moku-primary)] text-xs font-bold text-[var(--moku-primary)] cursor-pointer transition-colors"
               >
-                {sellerSaved ? '✓ Saved Seller Configuration' : 'Save Key & Etsy Shop Link'}
+                {sellerSaved ? '✓ Saved Configuration' : 'Save Key & Store Link'}
               </button>
             </form>
 
@@ -449,7 +458,7 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-[var(--moku-text-primary)]">
-                    1. Public Demo Link (Paste in Etsy Description)
+                    1. Public Demo Link (Share with Buyers)
                   </span>
                   <button
                     type="button"
@@ -488,11 +497,11 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
             {/* Download Buyer Delivery Template */}
             <button
               type="button"
-              onClick={handleDownloadEtsyReceiptTemplate}
+              onClick={handleDownloadReceiptTemplate}
               className="w-full py-2.5 px-4 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold flex items-center justify-center space-x-2 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
             >
               <FileText className="w-4 h-4" />
-              <span>Download Etsy Buyer Delivery Card (.HTML)</span>
+              <span>Download Buyer Delivery Card (.HTML)</span>
             </button>
           </div>
         )}

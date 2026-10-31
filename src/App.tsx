@@ -409,7 +409,7 @@ export default function App() {
         onClose={() => setIsPinSetupOpen(false)}
       />
 
-      {/* License Key & Etsy Demo Unlock Modal */}
+      {/* License Key & Demo Unlock Modal */}
       <LicenseUnlockModal
         isOpen={isLicenseModalOpen}
         onClose={() => setIsLicenseModalOpen(false)}
