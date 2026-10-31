@@ -171,6 +171,8 @@ export interface Expense {
   createdAt: number;
   updatedAt: number;
   deleted: boolean; // Soft delete flag
+  paymentMethod?: 'UPI' | 'Card' | 'Cash' | 'NetBanking' | string;
+  joyRating?: 'essential' | 'worth_it' | 'could_skip';
 }
 
 export type SavingsDestination = 
@@ -237,3 +239,64 @@ export const SUPPORTED_CURRENCIES: CurrencyConfig[] = [
   { code: 'AUD', symbol: 'A$', name: 'AUD (A$)' },
   { code: 'SGD', symbol: 'S$', name: 'SGD (S$)' },
 ];
+
+export interface BackupValidationReport {
+  isValid: boolean;
+  error?: string;
+  warnings?: string[];
+  data?: {
+    app?: string;
+    exportedAt?: string;
+    currency?: string;
+    plans: Plan[];
+    expenses: Expense[];
+    savingsEntries: SavingsEntry[];
+    inboxTransactions?: InboxTransaction[];
+  };
+  summary?: {
+    plansCount: number;
+    expensesCount: number;
+    savingsCount: number;
+    inboxCount: number;
+    exportedDateFormatted?: string;
+    currency?: string;
+    totalExpenseAmount: number;
+    totalSavingsAmount: number;
+  };
+}
+
+export interface SyncValidationResult {
+  status: 'synced' | 'local_only' | 'offline' | 'error';
+  isOnline: boolean;
+  endpointAccessible: boolean;
+  latencyMs: number;
+  lastSyncTimestamp: number | null;
+  localPlansCount: number;
+  localExpensesCount: number;
+  localSavingsCount: number;
+  remotePlansCount?: number;
+  remoteExpensesCount?: number;
+  remoteSavingsCount?: number;
+  conflictsResolvedCount: number;
+  message: string;
+  timestamp: number;
+}
+
+export interface PrivacyAuditReport {
+  storageType: string;
+  isLocalOnly: boolean;
+  totalStorageBytes: number;
+  totalStorageFormatted: string;
+  recordsBreakdown: {
+    plans: number;
+    expenses: number;
+    savings: number;
+    inbox: number;
+  };
+  telemetryDetected: boolean;
+  thirdPartyTrackersCount: number;
+  pinProtectionActive: boolean;
+  smsProcessingType: string;
+  networkSyncStatus: string;
+}
+

@@ -8,10 +8,13 @@ import {
   LogOut, 
   RotateCcw, 
   Lock, 
-  AlertTriangle,
-  Check,
-  CloudOff,
-  AlertCircle
+  AlertTriangle, 
+  Check, 
+  CloudOff, 
+  AlertCircle,
+  RefreshCw,
+  CheckCircle2,
+  Activity
 } from 'lucide-react';
 import { storage } from '../lib/storage';
 import { PinConfirmModal } from './PinConfirmModal';
@@ -37,6 +40,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [showPinConfirmModal, setShowPinConfirmModal] = useState(false);
+  const [syncDiagnostic, setSyncDiagnostic] = useState<any>(null);
+  const [isValidatingSync, setIsValidatingSync] = useState(false);
+
+  const handleValidateSync = async () => {
+    setIsValidatingSync(true);
+    try {
+      const res = await storage.validateSyncConnection();
+      setSyncDiagnostic(res);
+    } finally {
+      setIsValidatingSync(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -177,6 +192,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <span className="w-1.5 h-1.5 rounded-full bg-[#176B52] dark:bg-[#82D9B4] animate-pulse" />
             <span>Active</span>
           </span>
+        </div>
+
+        {/* Sync & Connectivity Validator */}
+        <div className="bg-[#F7F8F7] dark:bg-[#252925] rounded-2xl border border-[#DDE2DD] dark:border-[#414842] p-3.5 text-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-[#1A1C1A] dark:text-[#E3E5E1] flex items-center space-x-1.5 text-xs">
+              <Activity className="w-4 h-4 text-[#176B52] dark:text-[#82D9B4]" />
+              <span>Sync &amp; Connectivity Status</span>
+            </span>
+            <button
+              type="button"
+              id="auth-test-sync-btn"
+              onClick={handleValidateSync}
+              disabled={isValidatingSync}
+              className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#1B1E1B] border border-[#DDE2DD] dark:border-[#414842] hover:bg-[#EEF1EE] dark:hover:bg-[#2F3430] text-[11px] font-bold text-[#176B52] dark:text-[#82D9B4] flex items-center space-x-1 cursor-pointer transition-colors"
+            >
+              <RefreshCw className={`w-3 h-3 ${isValidatingSync ? 'animate-spin' : ''}`} />
+              <span>{isValidatingSync ? 'Testing...' : 'Test Sync'}</span>
+            </button>
+          </div>
+          {syncDiagnostic ? (
+            <div className="p-2.5 rounded-xl bg-[#D8F3E7]/40 dark:bg-[#214C3D]/40 border border-[#176B52]/20 text-[11px] space-y-1">
+              <div className="flex items-center space-x-1.5 font-bold text-[#176B52] dark:text-[#82D9B4]">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                <span>Parity Verified ({syncDiagnostic.latencyMs}ms)</span>
+              </div>
+              <p className="text-[#6E736F] dark:text-[#C1C7C0] text-[10px] leading-tight">
+                {syncDiagnostic.message}
+              </p>
+            </div>
+          ) : (
+            <p className="text-[11px] text-[#6E736F] dark:text-[#C1C7C0]">
+              Cross-tab sync active · Tap &ldquo;Test Sync&rdquo; to test endpoint connectivity.
+            </p>
+          )}
         </div>
 
         {/* Actions Container */}

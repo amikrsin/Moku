@@ -12,10 +12,19 @@ import {
   Search,
   X,
   SlidersHorizontal,
-  ChevronUp
+  ChevronUp,
+  BarChart3,
 } from 'lucide-react';
 import { Expense, Plan, SavingsEntry, UserProfile, CATEGORIES, Category } from '../types';
-import { formatCurrency, formatMonthName, computeCategorySectorBreakdown } from '../lib/storage';
+import { 
+  formatCurrency, 
+  formatMonthName, 
+  computeCategorySectorBreakdown,
+  roundMoney,
+  getPlanTotalIncome,
+  getPlanSavingsTarget,
+  getPlanSpendablePool
+} from '../lib/storage';
 import { CategoryBudgetCard } from './budget/CategoryBudgetCard';
 import { PlanVsActual } from './budget/PlanVsActual';
 import { TransactionItem } from './transactions/TransactionItem';
@@ -41,6 +50,7 @@ interface HomeScreenProps {
   onOpenSavingsModal: () => void;
   inboxPendingCount: number;
   onDeleteExpense?: (id: string) => void;
+  onOpenReview?: () => void;
 }
 
 export function HomeScreen({
@@ -60,6 +70,7 @@ export function HomeScreen({
   onOpenSavingsModal,
   inboxPendingCount,
   onDeleteExpense,
+  onOpenReview,
 }: HomeScreenProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<Category, boolean>>({
     survival: true,
@@ -72,7 +83,7 @@ export function HomeScreen({
     setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
   };
 
-  // Compute monthly financials
+  // Compute monthly financials with 2-decimal money precision
   const activeExpenses = useMemo(() => {
     return expenses.filter((e) => e.monthKey === monthKey && !e.deleted);
   }, [expenses, monthKey]);
@@ -82,17 +93,17 @@ export function HomeScreen({
   }, [savingsEntries, monthKey]);
 
   const totalSpent = useMemo(() => {
-    return activeExpenses.reduce((sum, e) => sum + e.amount, 0);
+    return roundMoney(activeExpenses.reduce((sum, e) => sum + (e.amount || 0), 0));
   }, [activeExpenses]);
 
   const totalSaved = useMemo(() => {
-    return activeSavings.reduce((sum, s) => sum + s.amount, 0);
+    return roundMoney(activeSavings.reduce((sum, s) => sum + (s.amount || 0), 0));
   }, [activeSavings]);
 
-  const income = plan ? (plan.income ?? 0) : 0;
-  const savingsTarget = plan ? (plan.savingsTarget ?? 0) : 0;
-  const availableToSpendBudget = Math.max(0, income - savingsTarget);
-  const remainingToSpend = availableToSpendBudget - totalSpent;
+  const income = useMemo(() => getPlanTotalIncome(plan), [plan]);
+  const savingsTarget = useMemo(() => getPlanSavingsTarget(plan), [plan]);
+  const availableToSpendBudget = useMemo(() => getPlanSpendablePool(plan), [plan]);
+  const remainingToSpend = useMemo(() => roundMoney(availableToSpendBudget - totalSpent), [availableToSpendBudget, totalSpent]);
 
   // Days in month & daily pacing calculation
   const { daysRemaining, dailyPace } = useMemo(() => {
@@ -117,12 +128,14 @@ export function HomeScreen({
 
   const spendPercentage = availableToSpendBudget > 0 
     ? Math.min(100, Math.round((totalSpent / availableToSpendBudget) * 100))
+    : (totalSpent > 0 ? 100 : 0);
+  const remainingPercentage = availableToSpendBudget > 0
+    ? Math.max(0, Math.round((Math.max(0, remainingToSpend) / availableToSpendBudget) * 100))
     : 0;
-  const remainingPercentage = Math.max(0, 100 - spendPercentage);
 
   const savingsPercentage = savingsTarget > 0
     ? Math.min(100, Math.round((totalSaved / savingsTarget) * 100))
-    : 0;
+    : (totalSaved > 0 ? 100 : 0);
 
   // Search & Filter State for Transaction History
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -283,7 +296,7 @@ export function HomeScreen({
           <button
             type="button"
             onClick={onOpenPlanSetup}
-            className="px-3.5 py-2 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold shrink-0 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+            className="px-3.5 py-2 rounded-xl bg-[var(--moku-primary)] text-[var(--moku-on-primary)] text-xs font-bold shrink-0 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
           >
             Set Plan
           </button>
@@ -291,9 +304,9 @@ export function HomeScreen({
       )}
 
       {/* HERO CARD: Available to Spend */}
-      <div className="bg-[var(--moku-primary)] text-white rounded-[26px] p-6 shadow-md relative overflow-hidden">
+      <div className="bg-[var(--moku-hero-bg)] text-[var(--moku-hero-text)] border border-white/10 rounded-[26px] p-6 shadow-md relative overflow-hidden">
         <div className="flex items-center justify-between">
-          <div className="text-xs font-bold tracking-wider uppercase opacity-85">
+          <div className="text-xs font-bold tracking-wider uppercase opacity-90">
             Available to spend
           </div>
           <button
@@ -304,7 +317,7 @@ export function HomeScreen({
           </button>
         </div>
 
-        <div className="text-4xl sm:text-5xl font-extrabold tracking-tight font-tabular my-3">
+        <div className="text-4xl sm:text-5xl font-extrabold tracking-tight font-tabular my-3 text-white">
           {formatCurrency(remainingToSpend, currency)}
         </div>
 
@@ -316,8 +329,8 @@ export function HomeScreen({
         {/* Progress Bar */}
         <div className="h-2 w-full bg-white/20 rounded-full mt-2.5 overflow-hidden">
           <div 
-            className="h-full bg-white rounded-full transition-all duration-500" 
-            style={{ width: `${Math.max(4, remainingPercentage)}%` }}
+            className="h-full bg-[var(--moku-primary)] dark:bg-[#4ADE9B] light:bg-white rounded-full transition-all duration-500" 
+            style={{ width: `${Math.max(4, remainingPercentage)}%`, backgroundColor: isDarkMode ? '#4ADE9B' : '#FFFFFF' }}
           />
         </div>
 
@@ -336,7 +349,7 @@ export function HomeScreen({
       </div>
 
       {/* Savings Goal Card */}
-      <div className="bg-[var(--moku-primary-container)] rounded-[22px] p-5 border border-[var(--moku-primary)]/20 shadow-2xs">
+      <div className="bg-[var(--moku-primary-container)] rounded-[22px] p-5 border border-[var(--moku-primary)]/25 shadow-2xs">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs font-semibold text-[var(--moku-primary)] uppercase tracking-wide">
@@ -354,7 +367,7 @@ export function HomeScreen({
             id="log-savings-btn"
             type="button"
             onClick={onOpenSavingsModal}
-            className="p-2 rounded-xl bg-[var(--moku-primary)] text-white hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+            className="p-2 rounded-xl bg-[var(--moku-primary)] text-[var(--moku-on-primary)] hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
             title="Log savings deposit"
           >
             <ArrowUpRight className="w-5 h-5" />
@@ -405,12 +418,25 @@ export function HomeScreen({
               Plan vs actual spending breakdown
             </span>
           </div>
-          <button
-            onClick={onOpenPlanSetup}
-            className="text-xs font-bold text-[var(--moku-primary)] hover:underline cursor-pointer"
-          >
-            Edit plan
-          </button>
+          <div className="flex items-center space-x-2.5">
+            {onOpenReview && (
+              <button
+                type="button"
+                onClick={onOpenReview}
+                className="text-xs font-semibold text-[var(--moku-text-secondary)] hover:text-[var(--moku-primary)] flex items-center space-x-1 cursor-pointer transition-colors"
+                title="View full Kakeibo report and charts"
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-[var(--moku-primary)]" />
+                <span>Reports</span>
+              </button>
+            )}
+            <button
+              onClick={onOpenPlanSetup}
+              className="text-xs font-bold text-[var(--moku-primary)] hover:underline cursor-pointer"
+            >
+              Edit plan
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -538,7 +564,7 @@ export function HomeScreen({
               onClick={() => setSelectedCategoryFilter('all')}
               className={`px-2.5 py-1 rounded-xl text-xs font-medium shrink-0 transition-all cursor-pointer ${
                 selectedCategoryFilter === 'all'
-                  ? 'bg-[var(--moku-primary)] text-white dark:text-[#121412] font-semibold'
+                  ? 'bg-[var(--moku-primary)] text-[var(--moku-on-primary)] font-bold'
                   : 'bg-[var(--moku-surface)] text-[var(--moku-text-secondary)] hover:text-[var(--moku-text-primary)] border border-[var(--moku-outline)]'
               }`}
             >
@@ -554,7 +580,7 @@ export function HomeScreen({
                   onClick={() => setSelectedCategoryFilter(isSelected ? 'all' : catKey)}
                   className={`px-2.5 py-1 rounded-xl text-xs font-medium shrink-0 flex items-center space-x-1 transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-[var(--moku-primary)] text-white dark:text-[#121412] font-semibold'
+                      ? 'bg-[var(--moku-primary)] text-[var(--moku-on-primary)] font-bold'
                       : 'bg-[var(--moku-surface)] text-[var(--moku-text-secondary)] hover:text-[var(--moku-text-primary)] border border-[var(--moku-outline)]'
                   }`}
                 >
@@ -585,7 +611,7 @@ export function HomeScreen({
                 <button
                   type="button"
                   onClick={() => setSearchScope('all')}
-                  className="px-3 py-1.5 rounded-xl bg-[var(--moku-primary)] text-white dark:text-[#121412] text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-[var(--moku-primary)] text-[var(--moku-on-primary)] text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
                 >
                   Search all past months
                 </button>

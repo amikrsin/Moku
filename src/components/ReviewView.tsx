@@ -4,7 +4,7 @@ import {
   Expense, 
   Plan 
 } from '../types';
-import { formatCurrency, formatMonthName } from '../lib/storage';
+import { formatCurrency, formatMonthName, roundMoney, getPlanTotalIncome } from '../lib/storage';
 import { getT, getCategoriesForCurrency } from '../lib/i18n';
 import { 
   CheckCircle2, 
@@ -78,17 +78,17 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
 
   activeExpenses.forEach((e) => {
     if (categorySpends[e.category] !== undefined) {
-      categorySpends[e.category] += e.amount;
+      categorySpends[e.category] = roundMoney(categorySpends[e.category] + (e.amount || 0));
     }
   });
 
-  const totalSpent = activeExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const income = plan.income;
-  const savingsTarget = plan.savingsTarget;
-  const plannedExpenses = plan.totalExpenses;
+  const totalSpent = roundMoney(activeExpenses.reduce((sum, e) => sum + (e.amount || 0), 0));
+  const income = getPlanTotalIncome(plan);
+  const savingsTarget = plan.savingsTarget || 0;
+  const plannedExpenses = plan.totalExpenses || 0;
 
-  const actualSavings = Math.max(0, income - totalSpent);
-  const savingsDiff = actualSavings - savingsTarget;
+  const actualSavings = roundMoney(income - totalSpent);
+  const savingsDiff = roundMoney(actualSavings - savingsTarget);
   const isSavingsMet = savingsDiff >= 0;
 
   const handleSaveReflection = () => {
@@ -152,7 +152,9 @@ export const ReviewView: React.FC<ReviewViewProps> = ({
               <p className="text-xs text-[#565248]">
                 {isSavingsMet
                   ? `You preserved ${formatCurrency(actualSavings, currency)}, exceeding your target by ${formatCurrency(savingsDiff, currency)}.`
-                  : `You preserved ${formatCurrency(actualSavings, currency)}, which is ${formatCurrency(Math.abs(savingsDiff), currency)} below your target.`
+                  : actualSavings >= 0
+                  ? `You preserved ${formatCurrency(actualSavings, currency)}, which is ${formatCurrency(Math.abs(savingsDiff), currency)} below your target.`
+                  : `You had a spending deficit of ${formatCurrency(Math.abs(actualSavings), currency)}, falling ${formatCurrency(Math.abs(savingsDiff), currency)} short of your target.`
                 }
               </p>
             </div>

@@ -5,22 +5,25 @@
     /* Base MOKU Design System Tokens - Light Mode */
     --moku-primary: #176B52;
     --moku-primary-hover: #125843;
+    --moku-on-primary: #FFFFFF;
     --moku-primary-container: #D8F3E7;
-    --moku-primary-container-text: #176B52;
+    --moku-primary-container-text: #14533E;
+    --moku-hero-bg: #176B52;
+    --moku-hero-text: #FFFFFF;
     
-    --moku-background: #F7F8F7;
+    --moku-background: #F6F8F6;
     --moku-surface: #FFFFFF;
-    --moku-surface-secondary: #EEF1EE;
-    --moku-surface-tertiary: #E3E7E3;
+    --moku-surface-secondary: #EEF2EE;
+    --moku-surface-tertiary: #E2E8E2;
     
-    --moku-text-primary: #1A1C1A;
-    --moku-text-secondary: #6E736F;
-    --moku-text-tertiary: #9CA39E;
+    --moku-text-primary: #141815;
+    --moku-text-secondary: #525954;
+    --moku-text-tertiary: #7A827C;
     
-    --moku-outline: #DDE2DD;
-    --moku-outline-variant: #E8ECE8;
+    --moku-outline: #D5DDD6;
+    --moku-outline-variant: #E4EBE5;
     
-    --moku-success: #1B7A43;
+    --moku-success: #167943;
     --moku-success-container: #DCFCE7;
     --moku-success-text: #14532D;
     
@@ -48,49 +51,54 @@
   }
 
   .dark {
-    /* Base MOKU Design System Tokens - Dark Mode */
-    --moku-primary: #82D9B4;
-    --moku-primary-hover: #6ec29e;
-    --moku-primary-container: #214C3D;
-    --moku-primary-container-text: #82D9B4;
+    color-scheme: dark;
+
+    /* Base MOKU Design System Tokens - High-Contrast Night Mode */
+    --moku-primary: #4ADE9B;
+    --moku-primary-hover: #34D38B;
+    --moku-on-primary: #072217;
+    --moku-primary-container: #153326;
+    --moku-primary-container-text: #6EE7B7;
+    --moku-hero-bg: #133A29;
+    --moku-hero-text: #F4F9F5;
     
-    --moku-background: #121412;
-    --moku-surface: #1B1E1B;
-    --moku-surface-secondary: #252925;
-    --moku-surface-tertiary: #2E342E;
+    --moku-background: #0D110E;
+    --moku-surface: #161C18;
+    --moku-surface-secondary: #1F2722;
+    --moku-surface-tertiary: #29332D;
     
-    --moku-text-primary: #E3E5E1;
-    --moku-text-secondary: #A6ADA6;
-    --moku-text-tertiary: #6E736F;
+    --moku-text-primary: #F3F6F4;
+    --moku-text-secondary: #B8C2BA;
+    --moku-text-tertiary: #8A968D;
     
-    --moku-outline: #383F38;
-    --moku-outline-variant: #282E28;
+    --moku-outline: #2E3A32;
+    --moku-outline-variant: #232C26;
     
     --moku-success: #4ADE80;
-    --moku-success-container: #14532D;
+    --moku-success-container: #133923;
     --moku-success-text: #86EFAC;
     
     --moku-warning: #FBBF24;
-    --moku-warning-container: #78350F;
+    --moku-warning-container: #3B250A;
     --moku-warning-text: #FDE68A;
     
     --moku-danger: #F87171;
-    --moku-danger-container: #7F1D1D;
+    --moku-danger-container: #421818;
     --moku-danger-text: #FECACA;
     
     --moku-unplanned: #A78BFA;
-    --moku-unplanned-container: #4C1D95;
+    --moku-unplanned-container: #2E165B;
     --moku-unplanned-text: #DDD6FE;
 
     /* Kakeibo Categories Dark */
-    --moku-cat-essentials: #82D9B4;
-    --moku-cat-essentials-bg: #1C382E;
-    --moku-cat-wants: #FBA974;
-    --moku-cat-wants-bg: #3B271A;
-    --moku-cat-growth: #A5B6E2;
-    --moku-cat-growth-bg: #21293B;
-    --moku-cat-unexpected: #FF897D;
-    --moku-cat-unexpected-bg: #3D1E1E;
+    --moku-cat-essentials: #6EE7B7;
+    --moku-cat-essentials-bg: #132F23;
+    --moku-cat-wants: #FDBA74;
+    --moku-cat-wants-bg: #362214;
+    --moku-cat-growth: #93C5FD;
+    --moku-cat-growth-bg: #1B273D;
+    --moku-cat-unexpected: #FCA5A5;
+    --moku-cat-unexpected-bg: #3B1A1A;
   }
 
   body {
@@ -99,6 +107,11 @@
     background-color: var(--moku-background);
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+  }
+
+  select option {
+    background-color: var(--moku-surface);
+    color: var(--moku-text-primary);
   }
 
   input, textarea {

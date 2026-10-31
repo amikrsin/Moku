@@ -21,7 +21,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
   disabled,
   ...props
 }) => {
-  let variantClasses = 'bg-[var(--moku-primary)] hover:bg-[var(--moku-primary-hover)] text-white shadow-xs';
+  let variantClasses = 'bg-[var(--moku-primary)] hover:bg-[var(--moku-primary-hover)] text-[var(--moku-on-primary)] shadow-xs';
   if (variant === 'secondary') {
     variantClasses = 'bg-[var(--moku-surface-secondary)] hover:bg-[var(--moku-surface-tertiary)] text-[var(--moku-text-primary)] border border-[var(--moku-outline)]';
   } else if (variant === 'outline') {

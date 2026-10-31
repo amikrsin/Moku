@@ -16,8 +16,9 @@ export const BudgetProgress: React.FC<BudgetProgressProps> = ({
   height = 'md',
   className = '',
 }) => {
-  const percentage = total > 0 ? Math.min(100, Math.round((spent / total) * 100)) : 0;
-  const isOver = spent > total && total > 0;
+  const isUnplanned = status === 'UNPLANNED' || (total === 0 && spent > 0);
+  const isOver = (spent > total && total > 0) || status === 'OVER_PLAN';
+  const percentage = total > 0 ? Math.min(100, Math.round((spent / total) * 100)) : (spent > 0 ? 100 : 0);
 
   const heightClasses = {
     sm: 'h-1.5',
@@ -26,12 +27,12 @@ export const BudgetProgress: React.FC<BudgetProgressProps> = ({
   }[height];
 
   let barColor = 'bg-[var(--moku-primary)]';
-  if (isOver || status === 'OVER_PLAN') {
+  if (isOver) {
     barColor = 'bg-[var(--moku-danger)]';
+  } else if (isUnplanned) {
+    barColor = 'bg-[var(--moku-warning)]';
   } else if (status === 'WATCH' || percentage >= 80) {
     barColor = 'bg-[var(--moku-warning)]';
-  } else if (status === 'UNPLANNED') {
-    barColor = 'bg-[var(--moku-unplanned)]';
   } else if (status === 'PAID') {
     barColor = 'bg-[var(--moku-success)]';
   }
@@ -46,7 +47,7 @@ export const BudgetProgress: React.FC<BudgetProgressProps> = ({
     >
       <div
         className={`${heightClasses} rounded-full transition-all duration-300 ${barColor}`}
-        style={{ width: `${isOver ? 100 : Math.max(percentage > 0 ? 3 : 0, percentage)}%` }}
+        style={{ width: `${isOver || isUnplanned ? 100 : Math.max(percentage > 0 ? 4 : 0, percentage)}%` }}
       />
     </div>
   );

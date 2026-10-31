@@ -438,17 +438,17 @@ export function MonthlyPlanSheet({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg max-h-[92vh] flex flex-col bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-gray-200/80 dark:border-zinc-800 overflow-hidden"
+        className="w-full max-w-lg max-h-[92vh] flex flex-col bg-[var(--moku-surface)] text-[var(--moku-text-primary)] rounded-3xl shadow-2xl border border-[var(--moku-outline)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Drag Handle Indicator */}
-        <div className="w-12 h-1 bg-gray-300 dark:bg-zinc-600 rounded-full mx-auto mt-3 shrink-0" />
+        <div className="w-12 h-1 bg-[var(--moku-outline)] rounded-full mx-auto mt-3 shrink-0" />
 
         {/* Header Bar */}
-        <div className="px-5 pt-2 pb-3 border-b border-gray-100 dark:border-zinc-800/80 shrink-0">
+        <div className="px-5 pt-2 pb-3 border-b border-[var(--moku-outline)] shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#165B40] dark:text-emerald-400">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--moku-primary)]">
                 {monthTitle} · STEP {currentStepIndex + 1} OF {totalSteps}
               </span>
             </div>
@@ -456,7 +456,7 @@ export function MonthlyPlanSheet({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="p-1.5 text-[var(--moku-text-secondary)] hover:text-[var(--moku-text-primary)] rounded-full hover:bg-[var(--moku-surface-secondary)] transition-colors cursor-pointer"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -464,9 +464,9 @@ export function MonthlyPlanSheet({
           </div>
 
           {/* Progress Bar Line */}
-          <div className="w-full bg-gray-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-2.5">
+          <div className="w-full bg-[var(--moku-surface-secondary)] h-1.5 rounded-full overflow-hidden mt-2.5">
             <div
-              className="bg-[#165B40] dark:bg-emerald-500 h-full transition-all duration-300"
+              className="bg-[var(--moku-primary)] h-full transition-all duration-300"
               style={{ width: `${((currentStepIndex + 1) / totalSteps) * 100}%` }}
             />
           </div>
@@ -482,10 +482,10 @@ export function MonthlyPlanSheet({
               {/* Step Header */}
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight">
+                  <h2 className="text-xl font-bold text-[var(--moku-text-primary)] leading-tight">
                     1. Available Money
                   </h2>
-                  <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                  <p className="text-xs text-[var(--moku-text-secondary)] mt-0.5">
                     Determine your total inflows and pay-yourself-first savings.
                   </p>
                 </div>
@@ -495,10 +495,10 @@ export function MonthlyPlanSheet({
                   <button
                     type="button"
                     onClick={() => handleCopyPastPlan(latestPastPlan)}
-                    className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-xs font-semibold text-gray-700 dark:text-zinc-300 transition-colors cursor-pointer shrink-0"
+                    className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-[var(--moku-surface-secondary)] hover:bg-[var(--moku-surface-tertiary)] border border-[var(--moku-outline)] text-xs font-semibold text-[var(--moku-text-primary)] transition-colors cursor-pointer shrink-0"
                     title={`Copy numbers from ${formatMonthName(latestPastPlan.monthKey)}`}
                   >
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-3.5 h-3.5 text-[var(--moku-primary)]" />
                     <span>Copy {formatMonthName(latestPastPlan.monthKey)}</span>
                   </button>
                 )}
@@ -528,12 +528,12 @@ export function MonthlyPlanSheet({
               <div className="space-y-1.5">
                 <label
                   htmlFor="input-expected-income"
-                  className="text-[11px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider block"
+                  className="text-[11px] font-bold text-[var(--moku-text-secondary)] uppercase tracking-wider block"
                 >
                   EXPECTED MONTHLY INCOME
                 </label>
-                <div className="flex items-center h-13 px-4 rounded-xl bg-[#f4f6f4] dark:bg-zinc-800/80 border border-gray-200/80 dark:border-zinc-700 focus-within:border-[#165B40] focus-within:ring-1 focus-within:ring-[#165B40] transition-all">
-                  <span className="text-lg font-bold text-gray-600 dark:text-zinc-300 mr-2 select-none">
+                <div className="flex items-center h-13 px-4 rounded-xl bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] focus-within:border-[var(--moku-primary)] focus-within:ring-1 focus-within:ring-[var(--moku-primary)] transition-all">
+                  <span className="text-lg font-bold text-[var(--moku-primary)] mr-2 select-none">
                     {currencySymbol}
                   </span>
                   <input
@@ -543,7 +543,7 @@ export function MonthlyPlanSheet({
                     value={incomeStr}
                     onChange={(e) => setIncomeStr(e.target.value)}
                     placeholder="50000"
-                    className="w-full bg-transparent text-xl font-bold font-tabular text-gray-900 dark:text-white outline-none"
+                    className="w-full bg-transparent text-xl font-bold font-tabular text-[var(--moku-text-primary)] outline-none"
                   />
                 </div>
               </div>
@@ -552,12 +552,12 @@ export function MonthlyPlanSheet({
               <div className="space-y-1.5">
                 <label
                   htmlFor="input-opening-carryover"
-                  className="text-[11px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider block"
+                  className="text-[11px] font-bold text-[var(--moku-text-secondary)] uppercase tracking-wider block"
                 >
                   OPENING BALANCE / CARRYOVER
                 </label>
-                <div className="flex items-center h-13 px-4 rounded-xl bg-[#f4f6f4] dark:bg-zinc-800/80 border border-gray-200/80 dark:border-zinc-700 focus-within:border-[#165B40] focus-within:ring-1 focus-within:ring-[#165B40] transition-all">
-                  <span className="text-lg font-bold text-gray-600 dark:text-zinc-300 mr-2 select-none">
+                <div className="flex items-center h-13 px-4 rounded-xl bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] focus-within:border-[var(--moku-primary)] focus-within:ring-1 focus-within:ring-[var(--moku-primary)] transition-all">
+                  <span className="text-lg font-bold text-[var(--moku-primary)] mr-2 select-none">
                     {currencySymbol}
                   </span>
                   <input
@@ -567,7 +567,7 @@ export function MonthlyPlanSheet({
                     value={openingBalanceStr}
                     onChange={(e) => setOpeningBalanceStr(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-transparent text-xl font-bold font-tabular text-gray-900 dark:text-white outline-none"
+                    className="w-full bg-transparent text-xl font-bold font-tabular text-[var(--moku-text-primary)] outline-none"
                   />
                 </div>
               </div>
@@ -577,19 +577,19 @@ export function MonthlyPlanSheet({
                 <div className="flex items-center justify-between">
                   <label
                     htmlFor="input-target-savings"
-                    className="text-[11px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider block"
+                    className="text-[11px] font-bold text-[var(--moku-text-secondary)] uppercase tracking-wider block"
                   >
                     TARGET MONTHLY SAVINGS
                   </label>
                   {savingsRate > 0 && (
-                    <span className="text-xs font-semibold text-[#165B40] dark:text-emerald-400">
+                    <span className="text-xs font-semibold text-[var(--moku-primary)]">
                       {savingsRate}% of available
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center h-13 px-4 rounded-xl bg-[#f4f6f4] dark:bg-zinc-800/80 border border-gray-200/80 dark:border-zinc-700 focus-within:border-[#165B40] focus-within:ring-1 focus-within:ring-[#165B40] transition-all">
-                  <span className="text-lg font-bold text-gray-600 dark:text-zinc-300 mr-2 select-none">
+                <div className="flex items-center h-13 px-4 rounded-xl bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] focus-within:border-[var(--moku-primary)] focus-within:ring-1 focus-within:ring-[var(--moku-primary)] transition-all">
+                  <span className="text-lg font-bold text-[var(--moku-primary)] mr-2 select-none">
                     {currencySymbol}
                   </span>
                   <input
@@ -602,7 +602,7 @@ export function MonthlyPlanSheet({
                       setSelectedSavingsRate(null);
                     }}
                     placeholder="15000"
-                    className="w-full bg-transparent text-xl font-bold font-tabular text-gray-900 dark:text-white outline-none"
+                    className="w-full bg-transparent text-xl font-bold font-tabular text-[var(--moku-text-primary)] outline-none"
                   />
                 </div>
 
@@ -617,8 +617,8 @@ export function MonthlyPlanSheet({
                         onClick={() => handleApplySavingsRate(pct)}
                         className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-[#165B40] text-white shadow-xs'
-                            : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
+                            ? 'bg-[var(--moku-primary)] text-[var(--moku-on-primary)] shadow-xs'
+                            : 'bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] text-[var(--moku-text-primary)] hover:bg-[var(--moku-surface-tertiary)]'
                         }`}
                       >
                         {pct}%
@@ -628,27 +628,27 @@ export function MonthlyPlanSheet({
                 </div>
               </div>
 
-              {/* Total Available & Spendable Pool Summary Card (Screenshot 5) */}
-              <div className="p-4 rounded-2xl bg-[#eaf4ef] dark:bg-emerald-950/20 border border-[#d2e5da] dark:border-emerald-800/30 space-y-2">
-                <div className="flex items-center justify-between text-xs text-gray-700 dark:text-zinc-300">
+              {/* Total Available & Spendable Pool Summary Card */}
+              <div className="p-4 rounded-2xl bg-[var(--moku-primary-container)] border border-[var(--moku-primary)]/25 space-y-2">
+                <div className="flex items-center justify-between text-xs text-[var(--moku-text-secondary)]">
                   <span>Total Available Money</span>
-                  <span className="font-bold font-tabular text-gray-900 dark:text-white">
+                  <span className="font-bold font-tabular text-[var(--moku-text-primary)]">
                     {formatCurrency(totalAvailable, currency)}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300 font-semibold">
+                <div className="flex items-center justify-between text-xs text-[var(--moku-primary)] font-semibold">
                   <span>Committed Savings Target</span>
                   <span className="font-bold font-tabular">
                     -{formatCurrency(parsedSavingsTarget, currency)}
                   </span>
                 </div>
 
-                <div className="border-t border-[#c6dfd0] dark:border-emerald-800/40 my-1 pt-2 flex items-center justify-between">
-                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                <div className="border-t border-[var(--moku-primary)]/20 my-1 pt-2 flex items-center justify-between">
+                  <span className="text-sm font-bold text-[var(--moku-text-primary)]">
                     Available to Spend
                   </span>
-                  <span className="text-xl font-extrabold text-[#165B40] dark:text-emerald-400 font-tabular">
+                  <span className="text-xl font-extrabold text-[var(--moku-primary)] font-tabular">
                     {formatCurrency(spendablePool, currency)}
                   </span>
                 </div>
@@ -1055,15 +1055,15 @@ export function MonthlyPlanSheet({
         </div>
 
         {/* =========================================================================
-            BOTTOM NAVIGATION ACTIONS BAR (Screenshots 4 - 9)
+            BOTTOM NAVIGATION ACTIONS BAR
            ========================================================================= */}
-        <div className="px-5 py-3.5 border-t border-gray-100 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 flex items-center space-x-3 shrink-0">
+        <div className="px-5 py-3.5 border-t border-[var(--moku-outline)] bg-[var(--moku-surface)] flex items-center space-x-3 shrink-0">
           {/* Back Button (Shown on steps > 0) */}
           {currentStepIndex > 0 ? (
             <button
               type="button"
               onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
-              className="w-12 h-12 flex items-center justify-center rounded-2xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-750 transition-colors cursor-pointer shrink-0"
+              className="w-12 h-12 flex items-center justify-center rounded-2xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-[var(--moku-text-primary)] hover:bg-[var(--moku-surface-tertiary)] transition-colors cursor-pointer shrink-0"
               aria-label="Previous step"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -1075,7 +1075,7 @@ export function MonthlyPlanSheet({
             <button
               type="button"
               onClick={() => setCurrentStepIndex(1)}
-              className="flex-1 h-12 rounded-2xl bg-[#165B40] hover:bg-[#124d35] text-white text-sm font-bold flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer"
+              className="flex-1 h-12 rounded-2xl bg-[var(--moku-primary)] hover:bg-[var(--moku-primary-hover)] text-[var(--moku-on-primary)] text-sm font-bold flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer"
             >
               <span>Next: Allocate 4 Categories</span>
               <ArrowRight className="w-4 h-4" />
@@ -1086,7 +1086,7 @@ export function MonthlyPlanSheet({
             <button
               type="button"
               onClick={() => setCurrentStepIndex(2)}
-              className="flex-1 h-12 rounded-2xl bg-[#165B40] hover:bg-[#124d35] text-white text-sm font-bold flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer"
+              className="flex-1 h-12 rounded-2xl bg-[var(--moku-primary)] hover:bg-[var(--moku-primary-hover)] text-[var(--moku-on-primary)] text-sm font-bold flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer"
             >
               <span>Review &amp; Confirm</span>
               <ArrowRight className="w-4 h-4" />
@@ -1097,7 +1097,7 @@ export function MonthlyPlanSheet({
             <button
               type="button"
               onClick={handleSave}
-              className="flex-1 h-12 rounded-2xl bg-[#165B40] hover:bg-[#124d35] text-white text-sm font-bold flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer"
+              className="flex-1 h-12 rounded-2xl bg-[var(--moku-primary)] hover:bg-[var(--moku-primary-hover)] text-[var(--moku-on-primary)] text-sm font-bold flex items-center justify-center space-x-2 shadow-sm transition-all cursor-pointer"
             >
               <Check className="w-4 h-4" />
               <span>Save Monthly Plan</span>

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { Download, Smartphone, Share2, PlusSquare, X, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, Smartphone, Share2, PlusSquare, X, Check, Lock } from 'lucide-react';
 import { usePWAInstall } from '../lib/usePWAInstall';
+import { getLicenseState, subscribeLicense } from '../lib/license';
+import { LicenseUnlockModal } from './LicenseUnlockModal';
 
 interface PWAInstallButtonProps {
   variant?: 'compact' | 'tile' | 'banner';
@@ -14,6 +16,15 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [isLicensed, setIsLicensed] = useState<boolean>(() => getLicenseState().isLicensed);
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
+
+  useEffect(() => {
+    const unsub = subscribeLicense(() => {
+      setIsLicensed(getLicenseState().isLicensed);
+    });
+    return () => unsub();
+  }, []);
 
   // If already running as an installed standalone PWA, suppress button
   if (isInstalled) {
@@ -43,6 +54,12 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   }
 
   const handleInstallClick = async () => {
+    // Block downloading in Demo Mode until paid license is activated
+    if (!isLicensed) {
+      setShowLicenseModal(true);
+      return;
+    }
+
     if (isInstallable) {
       setIsInstalling(true);
       try {
@@ -67,16 +84,30 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
           type="button"
           onClick={handleInstallClick}
           disabled={isInstalling}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold shadow-2xs hover:opacity-90 transition-all cursor-pointer ${className}`}
-          title="Install MOKU to your home screen"
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-2xs hover:opacity-90 transition-all cursor-pointer ${
+            isLicensed
+              ? 'bg-[var(--moku-primary)] text-[var(--moku-on-primary)]'
+              : 'bg-amber-100 dark:bg-[#1E170A] text-amber-950 dark:text-[#FFF8E7] border border-amber-300 dark:border-amber-500/50'
+          } ${className}`}
+          title={isLicensed ? 'Install MOKU to your home screen' : 'Unlock Full Version to Download App'}
         >
-          <Download className="w-3.5 h-3.5" />
-          <span>{isInstalling ? 'Installing...' : 'Install App'}</span>
+          {isLicensed ? <Download className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5 text-amber-700 dark:text-[#FCD34D]" />}
+          <span>
+            {isInstalling
+              ? 'Installing...'
+              : isLicensed
+              ? 'Install App'
+              : 'Download Locked (Demo)'}
+          </span>
         </button>
 
         {showIOSGuide && (
           <InstallInstructionsModal onClose={() => setShowIOSGuide(false)} isIOS={isIOS} />
         )}
+        <LicenseUnlockModal
+          isOpen={showLicenseModal}
+          onClose={() => setShowLicenseModal(false)}
+        />
       </>
     );
   }
@@ -92,27 +123,41 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
           className={`w-full p-4.5 flex items-center justify-between hover:bg-[var(--moku-surface-secondary)] transition-colors text-left cursor-pointer ${className}`}
         >
           <div className="flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-xl bg-[var(--moku-primary-container)] flex items-center justify-center text-[var(--moku-primary)]">
-              <Smartphone className="w-5 h-5" />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              isLicensed
+                ? 'bg-[var(--moku-primary-container)] text-[var(--moku-primary)]'
+                : 'bg-amber-100 dark:bg-amber-500/25 text-amber-800 dark:text-[#FCD34D]'
+            }`}>
+              {isLicensed ? <Smartphone className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
             </div>
             <div>
               <div className="text-sm font-bold text-[var(--moku-text-primary)]">
-                Install MOKU (PWA)
+                {isLicensed ? 'Install MOKU (PWA)' : 'Download MOKU App (Locked in Demo)'}
               </div>
               <div className="text-xs text-[var(--moku-text-secondary)]">
-                Add to your home screen for offline use and fast launch
+                {isLicensed
+                  ? 'Add to your home screen for offline use and fast launch'
+                  : 'Enter your paid Etsy License Key to unlock app download'}
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-1 px-3 py-1 rounded-lg bg-[var(--moku-primary)] text-white text-xs font-bold">
-            <Download className="w-3.5 h-3.5" />
-            <span>Install</span>
+          <div className={`flex items-center space-x-1 px-3 py-1 rounded-lg text-xs font-bold shrink-0 ${
+            isLicensed
+              ? 'bg-[var(--moku-primary)] text-[var(--moku-on-primary)]'
+              : 'bg-amber-100 dark:bg-[#1E170A] text-amber-950 dark:text-[#FFF8E7] border border-amber-300 dark:border-amber-500/50'
+          }`}>
+            {isLicensed ? <Download className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5 text-amber-700 dark:text-[#FCD34D]" />}
+            <span>{isLicensed ? 'Install' : 'Unlock'}</span>
           </div>
         </button>
 
         {showIOSGuide && (
           <InstallInstructionsModal onClose={() => setShowIOSGuide(false)} isIOS={isIOS} />
         )}
+        <LicenseUnlockModal
+          isOpen={showLicenseModal}
+          onClose={() => setShowLicenseModal(false)}
+        />
       </>
     );
   }
@@ -120,17 +165,27 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   // Banner variant (suitable for Home dashboard or notice)
   return (
     <>
-      <div className={`p-4 rounded-2xl bg-[var(--moku-primary-container)] border border-[var(--moku-primary)]/30 flex items-center justify-between shadow-2xs ${className}`}>
+      <div className={`p-4 rounded-2xl border flex items-center justify-between shadow-2xs ${
+        isLicensed
+          ? 'bg-[var(--moku-primary-container)] border-[var(--moku-primary)]/30'
+          : 'bg-amber-50 dark:bg-[#1C1607] border-amber-200 dark:border-amber-500/40'
+      } ${className}`}>
         <div className="flex items-center space-x-3 pr-3">
-          <div className="w-9 h-9 rounded-xl bg-[var(--moku-primary)] text-white flex items-center justify-center shrink-0">
-            <Smartphone className="w-5 h-5" />
+          <div className={`w-9 h-9 rounded-xl text-white flex items-center justify-center shrink-0 ${
+            isLicensed ? 'bg-[var(--moku-primary)]' : 'bg-amber-600 dark:bg-[#F59E0B] dark:text-[#181002]'
+          }`}>
+            {isLicensed ? <Smartphone className="w-5 h-5" /> : <Lock className="w-5 h-5 text-white dark:text-[#181002]" />}
           </div>
           <div className="space-y-0.5">
-            <span className="text-xs font-bold text-[var(--moku-primary)] block">
-              Install MOKU on your device
+            <span className={`text-xs font-bold block ${
+              isLicensed ? 'text-[var(--moku-primary)]' : 'text-amber-950 dark:text-[#FFFDF5]'
+            }`}>
+              {isLicensed ? 'Install MOKU on your device' : 'Interactive Demo — App Download Locked'}
             </span>
             <p className="text-[11px] text-[var(--moku-text-secondary)] leading-tight">
-              Enjoy offline access, full-screen view, and lightning-fast entries.
+              {isLicensed
+                ? 'Enjoy offline access, full-screen view, and lightning-fast entries.'
+                : 'Try all features in browser. Unlock with your Etsy License Key to download the app.'}
             </p>
           </div>
         </div>
@@ -138,16 +193,24 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
           id="pwa-install-banner-btn"
           type="button"
           onClick={handleInstallClick}
-          className="px-3.5 py-2 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold shrink-0 hover:opacity-90 transition-opacity cursor-pointer shadow-xs flex items-center space-x-1.5"
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 hover:opacity-90 transition-opacity cursor-pointer shadow-xs flex items-center space-x-1.5 ${
+            isLicensed 
+              ? 'bg-[var(--moku-primary)] text-[var(--moku-on-primary)]' 
+              : 'bg-amber-600 dark:bg-[#F59E0B] text-white dark:text-[#181002] font-extrabold'
+          }`}
         >
-          <Download className="w-3.5 h-3.5" />
-          <span>Install</span>
+          {isLicensed ? <Download className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5 text-white dark:text-[#181002]" />}
+          <span>{isLicensed ? 'Install' : 'Unlock'}</span>
         </button>
       </div>
 
       {showIOSGuide && (
         <InstallInstructionsModal onClose={() => setShowIOSGuide(false)} isIOS={isIOS} />
       )}
+      <LicenseUnlockModal
+        isOpen={showLicenseModal}
+        onClose={() => setShowLicenseModal(false)}
+      />
     </>
   );
 };
@@ -219,7 +282,7 @@ const InstallInstructionsModal: React.FC<InstallInstructionsModalProps> = ({ onC
         <button
           type="button"
           onClick={onClose}
-          className="w-full py-2.5 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold cursor-pointer hover:opacity-90 transition-opacity shadow-xs"
+          className="w-full py-2.5 rounded-xl bg-[var(--moku-primary)] text-[var(--moku-on-primary)] text-xs font-bold cursor-pointer hover:opacity-90 transition-opacity shadow-xs"
         >
           Got it
         </button>

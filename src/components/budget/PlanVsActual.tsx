@@ -1,6 +1,12 @@
 import React from 'react';
 import { Plan, Expense } from '../../types';
-import { formatCurrency } from '../../lib/storage';
+import { 
+  formatCurrency, 
+  roundMoney, 
+  getPlanTotalIncome, 
+  getPlanSavingsTarget, 
+  getPlanSpendablePool 
+} from '../../lib/storage';
 import { MoneyAmount } from '../ui/MoneyAmount';
 import { AppCard } from '../ui/AppCard';
 
@@ -20,13 +26,13 @@ export const PlanVsActual: React.FC<PlanVsActualProps> = ({
   onOpenPlanWizard,
 }) => {
   const activeExpenses = expenses.filter((e) => e.monthKey === monthKey && !e.deleted);
-  const totalSpent = activeExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalSpent = roundMoney(activeExpenses.reduce((sum, e) => sum + (e.amount || 0), 0));
 
-  const income = plan?.income || 0;
-  const savingsTarget = plan?.savingsTarget || 0;
-  const spendableBudget = Math.max(0, income - savingsTarget);
-  const variance = totalSpent - spendableBudget;
-  const remainingSpendable = Math.max(0, spendableBudget - totalSpent);
+  const income = getPlanTotalIncome(plan);
+  const savingsTarget = getPlanSavingsTarget(plan);
+  const spendableBudget = getPlanSpendablePool(plan);
+  const variance = roundMoney(totalSpent - spendableBudget);
+  const remainingSpendable = roundMoney(Math.max(0, spendableBudget - totalSpent));
   const isOverSpendable = totalSpent > spendableBudget && spendableBudget > 0;
 
   return (

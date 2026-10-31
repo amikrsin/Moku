@@ -84,8 +84,16 @@ export const ExpenseFlowChart: React.FC<ExpenseFlowChartProps> = ({
     const filtered = expenses.filter((e) => !e.deleted && e.monthKey === monthKey);
 
     filtered.forEach((e) => {
-      // derive YYYY-MM-DD from ISO date
-      const datePart = e.date.split('T')[0];
+      // derive YYYY-MM-DD from date in local time
+      let datePart = e.date.split('T')[0];
+      try {
+        const d = new Date(e.date);
+        if (!isNaN(d.getTime())) {
+          datePart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+      } catch {
+        // fallback to split
+      }
       if (!map[datePart]) {
         map[datePart] = [];
       }

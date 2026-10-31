@@ -130,7 +130,15 @@ export const LedgerView: React.FC<LedgerViewProps> = ({
     );
 
     sorted.forEach((item) => {
-      const dayKey = item.date.split('T')[0];
+      let dayKey = item.date.split('T')[0];
+      try {
+        const d = new Date(item.date);
+        if (!isNaN(d.getTime())) {
+          dayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+      } catch {
+        // fallback
+      }
       if (!map.has(dayKey)) {
         map.set(dayKey, []);
       }

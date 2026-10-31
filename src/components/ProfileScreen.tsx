@@ -11,15 +11,22 @@ import {
   Lock,
   RotateCcw,
   AlertTriangle,
-  Check
+  Check,
+  KeyRound,
+  ShoppingBag,
+  ShieldCheck,
+  Database
 } from 'lucide-react';
 import { Plan, UserProfile, SUPPORTED_CURRENCIES } from '../types';
 import { formatCurrency, storage } from '../lib/storage';
+import { getLicenseState, subscribeLicense, enableSellerAdminMode } from '../lib/license';
 import { AppCard } from './ui/AppCard';
 import { AppButton } from './ui/AppButton';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { PinConfirmModal } from './PinConfirmModal';
 import { PWAInstallButton } from './PWAInstallButton';
+import { LicenseUnlockModal } from './LicenseUnlockModal';
+import { PrivacySyncAuditModal } from './PrivacySyncAuditModal';
 
 interface ProfileScreenProps {
   user: UserProfile;
@@ -30,7 +37,7 @@ interface ProfileScreenProps {
   onOpenMonthlyPlan: () => void;
   onOpenSavingsPortfolio: () => void;
   onOpenAuthModal: () => void;
-  onOpenExportModal: () => void;
+  onOpenExportModal: (tab?: 'export' | 'restore') => void;
   onOpenPinSetup: () => void;
   plan: Plan | null;
   monthKey: string;
@@ -53,6 +60,31 @@ export function ProfileScreen({
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [showPinConfirmModal, setShowPinConfirmModal] = useState(false);
+  const [licenseState, setLicenseState] = useState(() => getLicenseState());
+  const [licenseModalTab, setLicenseModalTab] = useState<'buyer' | 'seller'>('buyer');
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+  const [, setSecretTapCount] = useState(0);
+
+  React.useEffect(() => {
+    const unsub = subscribeLicense(() => {
+      setLicenseState(getLicenseState());
+    });
+    return () => unsub();
+  }, []);
+
+  const handleSecretSellerTap = () => {
+    setSecretTapCount((prev) => {
+      const next = prev + 1;
+      if (next >= 5) {
+        enableSellerAdminMode();
+        setLicenseModalTab('seller');
+        setShowLicenseModal(true);
+        return 0;
+      }
+      return next;
+    });
+  };
 
   const pinConfig = storage.getPinConfig();
   const isPinActive = pinConfig.isEnabled && !!pinConfig.pinHash;
@@ -242,22 +274,117 @@ export function ProfileScreen({
         {/* PWA Install Tile */}
         <PWAInstallButton variant="tile" />
 
-        {/* Data Export & Backup */}
+        {/* License Activation Tile (Buyer-facing only for general users) */}
         <button
+          id="profile-license-hub-btn"
           type="button"
-          onClick={onOpenExportModal}
+          onClick={() => {
+            setLicenseModalTab('buyer');
+            setShowLicenseModal(true);
+          }}
+          className="w-full p-4.5 flex items-center justify-between hover:bg-[var(--moku-surface-secondary)] transition-colors text-left cursor-pointer"
+        >
+          <div className="flex items-center space-x-3.5">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+              licenseState.isLicensed
+                ? 'bg-[var(--moku-primary-container)] text-[var(--moku-primary)]'
+                : 'bg-amber-100 dark:bg-amber-500/25 text-amber-800 dark:text-[#FCD34D]'
+            }`}>
+              <KeyRound className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-[var(--moku-text-primary)]">
+                {licenseState.isLicensed ? 'MOKU Pro License Status' : 'Unlock Full App (Enter License Key)'}
+              </div>
+              <div className="text-xs text-[var(--moku-text-secondary)]">
+                {licenseState.isLicensed
+                  ? `Active License (${licenseState.licenseKey}) · Full App & Export Unlocked`
+                  : 'Currently in Demo Mode (App Download Blocked) · Tap to unlock'}
+              </div>
+            </div>
+          </div>
+          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg shrink-0 ${
+            licenseState.isLicensed
+              ? 'bg-[var(--moku-primary-container)] text-[var(--moku-primary)]'
+              : 'bg-amber-100 dark:bg-[#1E170A] text-amber-950 dark:text-[#FFF8E7] border border-amber-300 dark:border-amber-500/50'
+          }`}>
+            {licenseState.isLicensed ? 'Pro Active' : 'Demo Lock'}
+          </span>
+        </button>
+
+        {/* Private Etsy Seller Toolkit — ONLY visible when Seller Admin mode is unlocked */}
+        {licenseState.isSellerAdmin && (
+          <button
+            id="profile-etsy-seller-btn"
+            type="button"
+            onClick={() => {
+              setLicenseModalTab('seller');
+              setShowLicenseModal(true);
+            }}
+            className="w-full p-4.5 flex items-center justify-between hover:bg-[var(--moku-surface-secondary)] transition-colors text-left cursor-pointer"
+          >
+            <div className="flex items-center space-x-3.5">
+              <div className="w-10 h-10 rounded-xl bg-[#F1641E]/15 flex items-center justify-center text-[#F1641E]">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-sm font-bold text-[var(--moku-text-primary)]">
+                  Etsy Seller Toolkit (Admin Only)
+                </div>
+                <div className="text-xs text-[var(--moku-text-secondary)]">
+                  Hidden from general users · Manage Demo &amp; Paid Links
+                </div>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-[var(--moku-text-secondary)]" />
+          </button>
+        )}
+
+        {/* Trust & Validation Center (Privacy, Sync & Storage) */}
+        <button
+          id="profile-trust-audit-btn"
+          type="button"
+          onClick={() => setShowAuditModal(true)}
+          className="w-full p-4.5 flex items-center justify-between hover:bg-[var(--moku-surface-secondary)] transition-colors text-left cursor-pointer"
+        >
+          <div className="flex items-center space-x-3.5">
+            <div className="w-10 h-10 rounded-xl bg-[#D8F3E7] dark:bg-[#214C3D] flex items-center justify-center text-[#176B52] dark:text-[#82D9B4]">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-[var(--moku-text-primary)]">
+                Trust &amp; Validation Center
+              </div>
+              <div className="text-xs text-[var(--moku-text-secondary)]">
+                Privacy audit, cross-tab sync parity &amp; backup validation
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-1.5">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#D8F3E7] dark:bg-[#214C3D] text-[#176B52] dark:text-[#82D9B4]">
+              Audit Active
+            </span>
+            <ChevronRight className="w-4 h-4 text-[var(--moku-text-secondary)]" />
+          </div>
+        </button>
+
+        {/* Data Export, Backup & Restore */}
+        <button
+          id="profile-backup-restore-hub-btn"
+          type="button"
+          onClick={() => onOpenExportModal('export')}
           className="w-full p-4.5 flex items-center justify-between hover:bg-[var(--moku-surface-secondary)] transition-colors text-left cursor-pointer"
         >
           <div className="flex items-center space-x-3.5">
             <div className="w-10 h-10 rounded-xl bg-[var(--moku-surface-secondary)] flex items-center justify-center text-[var(--moku-primary)]">
-              <Download className="w-5 h-5" />
+              <Database className="w-5 h-5" />
             </div>
             <div>
               <div className="text-sm font-bold text-[var(--moku-text-primary)]">
-                Export Data &amp; Backup
+                Backup, Restore &amp; Export Hub
               </div>
               <div className="text-xs text-[var(--moku-text-secondary)]">
-                CSV, JSON, and print-ready format
+                {licenseState.isLicensed ? 'Export CSV/JSON & restore validated backups' : 'Locked in Demo Mode · Requires License Key'}
               </div>
             </div>
           </div>
@@ -336,8 +463,26 @@ export function ProfileScreen({
         description="Enter your 4-digit PIN to authorize wiping all data and resetting your financial records."
       />
 
-      {/* Philosophy Card */}
-      <div className="p-4 bg-[var(--moku-primary-container)] border border-[var(--moku-primary)]/20 rounded-[22px] space-y-1">
+      {/* License Unlock & Etsy Seller Hub Modal */}
+      <LicenseUnlockModal
+        isOpen={showLicenseModal}
+        onClose={() => setShowLicenseModal(false)}
+        initialTab={licenseModalTab}
+      />
+
+      {/* Trust, Privacy & Sync Validation Modal */}
+      <PrivacySyncAuditModal
+        isOpen={showAuditModal}
+        onClose={() => setShowAuditModal(false)}
+        onOpenExportModal={onOpenExportModal}
+        onOpenPinSetup={onOpenPinSetup}
+      />
+
+      {/* Philosophy Card (Secret 5-tap Seller Admin trigger) */}
+      <div
+        onClick={handleSecretSellerTap}
+        className="p-4 bg-[var(--moku-primary-container)] border border-[var(--moku-primary)]/20 rounded-[22px] space-y-1 select-none"
+      >
         <div className="flex items-center space-x-2 text-xs font-bold text-[var(--moku-primary)]">
           <Info className="w-4 h-4 shrink-0" />
           <span>About MOKU 2.0</span>

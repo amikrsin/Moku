@@ -13,10 +13,14 @@ import {
   ArrowUpRight,
   X,
   Edit2,
-  RefreshCw
+  RefreshCw,
+  ClipboardPaste,
+  Smartphone,
+  Copy
 } from 'lucide-react';
 import { Category, CATEGORIES, InboxTransaction, Plan, QUICK_CHIP_SUGGESTIONS } from '../types';
 import { formatCurrency } from '../lib/storage';
+import { parseBulkSms } from '../lib/smsParser';
 import { AppCard } from './ui/AppCard';
 import { AppButton } from './ui/AppButton';
 import { MoneyAmount } from './ui/MoneyAmount';
@@ -190,36 +194,64 @@ export function InboxScreen({
     e.preventDefault();
     if (!simText.trim()) return;
 
-    // Parser for SMS amounts and merchants
-    const amountMatch = simText.match(/(?:rs\.?|inr|₹|\$)\s*([\d,]+(?:\.\d+)?)/i) || simText.match(/([\d,]+(?:\.\d+)?)\s*(?:rs\.?|inr|spent|debited|credited)/i);
-    const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 500;
-
-    let merchant = 'Incoming Transaction';
-    if (/swiggy/i.test(simText)) merchant = 'Swiggy Dinner';
-    else if (/zomato/i.test(simText)) merchant = 'Zomato Food';
-    else if (/uber|ola/i.test(simText)) merchant = 'Uber Ride';
-    else if (/amazon/i.test(simText)) merchant = 'Amazon Purchase';
-    else if (/blinkit|zepto|instamart/i.test(simText)) merchant = 'Quick Groceries';
-    else if (/salary|credited/i.test(simText)) merchant = 'Monthly Salary';
-    else {
-      const words = simText.split(' ').filter(w => w.length > 3);
-      merchant = words.slice(0, 3).join(' ') || 'Merchant Payment';
+    const parsedList = parseBulkSms(simText);
+    if (parsedList.length === 0) {
+      showTemporaryBanner('Could not detect a valid amount in the pasted SMS text.');
+      return;
     }
 
-    const isIncome = /credited|received|salary/i.test(simText);
-
-    onAddIncomingItem({
-      merchant,
-      amount: amount || 450,
-      type: isIncome ? 'income' : 'expense',
-      source: 'SMS / UPI Notification',
-      suggestedCategory: /grocer|blinkit|zepto|rent|bill/i.test(merchant) ? 'survival' : 'optional',
+    parsedList.forEach((parsed) => {
+      onAddIncomingItem({
+        merchant: parsed.merchant,
+        amount: parsed.amount,
+        type: parsed.type,
+        source: parsed.source,
+        suggestedCategory: parsed.type === 'expense' ? parsed.suggestedCategory : undefined,
+      });
     });
 
     setSimText('');
     setShowSimulateModal(false);
-    showTemporaryBanner(`Parsed SMS: "${merchant}" (${formatCurrency(amount || 450, currency)})`);
+    if (parsedList.length === 1) {
+      showTemporaryBanner(`Imported SMS: "${parsedList[0].merchant}" (${formatCurrency(parsedList[0].amount, currency)})`);
+    } else {
+      showTemporaryBanner(`Imported ${parsedList.length} SMS transactions into Inbox!`);
+    }
   };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const clipText = await navigator.clipboard.readText();
+        if (clipText && clipText.trim()) {
+          const parsedList = parseBulkSms(clipText);
+          if (parsedList.length > 0) {
+            parsedList.forEach((parsed) => {
+              onAddIncomingItem({
+                merchant: parsed.merchant,
+                amount: parsed.amount,
+                type: parsed.type,
+                source: parsed.source,
+                suggestedCategory: parsed.type === 'expense' ? parsed.suggestedCategory : undefined,
+              });
+            });
+            showTemporaryBanner(
+              parsedList.length === 1
+                ? `Auto-imported copied SMS: "${parsedList[0].merchant}" (${formatCurrency(parsedList[0].amount, currency)})`
+                : `Auto-imported ${parsedList.length} copied SMS transactions!`
+            );
+            return;
+          }
+        }
+      }
+      // If clipboard read didn't find an SMS or permission was denied, open the Paste SMS modal
+      setShowSimulateModal(true);
+    } catch {
+      setShowSimulateModal(true);
+    }
+  };
+
+  const automationUrlTemplate = `${typeof window !== 'undefined' ? window.location.origin : ''}/?sms=`;
 
   return (
     <div className="space-y-4 pb-8 animate-in fade-in duration-200">
@@ -233,20 +265,30 @@ export function InboxScreen({
               id="quick-add-inbox-btn"
               type="button"
               onClick={() => setShowManualAddModal(true)}
-              className="flex items-center space-x-1 px-3 py-2 rounded-xl bg-[var(--moku-surface-secondary)] text-xs font-bold text-[var(--moku-text-primary)] border border-[var(--moku-outline)] hover:bg-[var(--moku-surface-tertiary)] transition-colors cursor-pointer"
+              className="flex items-center space-x-1 px-2.5 py-2 rounded-xl bg-[var(--moku-surface-secondary)] text-xs font-bold text-[var(--moku-text-primary)] border border-[var(--moku-outline)] hover:bg-[var(--moku-surface-tertiary)] transition-colors cursor-pointer"
               title="Add transaction to inbox for later categorization"
             >
               <Plus className="w-3.5 h-3.5 text-[var(--moku-primary)]" />
               <span>Add</span>
             </button>
             <button
+              id="paste-clipboard-sms-btn"
+              type="button"
+              onClick={handlePasteFromClipboard}
+              className="flex items-center space-x-1 px-2.5 py-2 rounded-xl bg-[var(--moku-surface-secondary)] text-xs font-bold text-[var(--moku-primary)] border border-[var(--moku-primary)]/30 hover:bg-[var(--moku-primary-container)] transition-colors cursor-pointer"
+              title="1-Tap Paste Bank/UPI SMS from Clipboard"
+            >
+              <ClipboardPaste className="w-3.5 h-3.5" />
+              <span>Paste SMS</span>
+            </button>
+            <button
               id="simulate-sms-btn"
               type="button"
               onClick={() => setShowSimulateModal(true)}
-              className="flex items-center space-x-1 px-3 py-2 rounded-xl bg-[var(--moku-primary-container)] text-xs font-bold text-[var(--moku-primary)] border border-[var(--moku-primary)]/20 hover:opacity-90 transition-opacity cursor-pointer"
+              className="flex items-center space-x-1 px-2.5 py-2 rounded-xl bg-[var(--moku-primary-container)] text-xs font-bold text-[var(--moku-primary)] border border-[var(--moku-primary)]/20 hover:opacity-90 transition-opacity cursor-pointer"
             >
               <Zap className="w-3.5 h-3.5" />
-              <span>Simulate</span>
+              <span>Import</span>
             </button>
           </div>
         }
@@ -886,27 +928,31 @@ export function InboxScreen({
               </div>
             </div>
 
-            {/* Custom SMS Parser */}
+            {/* Custom & Bulk SMS Parser */}
             <form onSubmit={handleParseSms} className="space-y-3 pt-2 border-t border-[var(--moku-outline)]">
               <div className="flex items-center justify-between">
                 <label className="text-[11px] font-bold text-[var(--moku-text-secondary)] uppercase tracking-wider">
-                  Custom SMS / Text Parser
+                  Paste Bank / UPI SMS (Single or Bulk)
                 </label>
                 <button
                   type="button"
-                  onClick={() => setSimText('Sent Rs. 1,420 to Cafe Coffee Day via UPI ref 492049. Bal: Rs 38,200')}
+                  onClick={() =>
+                    setSimText(
+                      'Rs. 450.00 debited from A/c XX4821 to VPA swiggy@axisbank on 19-10-2026\nSent Rs. 1,250 to Blinkit via UPI ref 492049'
+                    )
+                  }
                   className="text-[10px] text-[var(--moku-primary)] hover:underline font-semibold cursor-pointer"
                 >
-                  Paste Sample SMS
+                  Load Multi-SMS Example
                 </button>
               </div>
 
               <textarea
                 value={simText}
                 onChange={(e) => setSimText(e.target.value)}
-                placeholder="e.g. Sent Rs. 1,250 to Blinkit via UPI on 02-Sep. Bal: Rs 43,750"
-                rows={3}
-                className="w-full p-3 rounded-xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-xs text-[var(--moku-text-primary)] outline-none resize-none"
+                placeholder="Paste 1 or multiple bank/UPI SMS messages (one per line). Amount, merchant, and Kakeibo category will be extracted automatically..."
+                rows={4}
+                className="w-full p-3 rounded-xl border border-[var(--moku-outline)] bg-[var(--moku-surface-secondary)] text-xs text-[var(--moku-text-primary)] outline-none resize-none focus:border-[var(--moku-primary)]"
               />
 
               <AppButton
@@ -915,9 +961,35 @@ export function InboxScreen({
                 type="submit"
                 disabled={!simText.trim()}
               >
-                Parse &amp; Push to Inbox
+                Parse &amp; Import to Inbox
               </AppButton>
             </form>
+
+            {/* Mobile Auto-Forward Guide (Why Web Apps Can't Read SMS Directly + Workaround) */}
+            <div className="p-3.5 rounded-2xl bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] space-y-2">
+              <div className="flex items-center space-x-1.5 text-xs font-bold text-[var(--moku-text-primary)]">
+                <Smartphone className="w-4 h-4 text-[var(--moku-primary)] shrink-0" />
+                <span>Auto-Forward Mobile SMS (iOS &amp; Android)</span>
+              </div>
+              <p className="text-[11px] text-[var(--moku-text-secondary)] leading-relaxed">
+                For privacy, mobile browsers block websites from reading your SMS inbox directly. To automate it without typing, set up an <strong>iOS Shortcut</strong> or <strong>Android MacroDroid</strong> automation:
+                <em> &ldquo;When SMS received containing &lsquo;debited/UPI&rsquo; &rarr; Open URL&rdquo;</em>:
+              </p>
+              <div className="flex items-center justify-between p-2 rounded-xl bg-[var(--moku-surface)] border border-[var(--moku-outline)] text-[10px] font-mono text-[var(--moku-text-primary)]">
+                <span className="truncate mr-2">{automationUrlTemplate}&#123;SMS_TEXT&#125;</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(automationUrlTemplate);
+                    showTemporaryBanner('Copied Automation URL prefix to clipboard!');
+                  }}
+                  className="px-2 py-1 rounded-lg bg-[var(--moku-primary-container)] text-[var(--moku-primary)] font-sans font-bold shrink-0 flex items-center space-x-1 cursor-pointer"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>Copy URL</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
