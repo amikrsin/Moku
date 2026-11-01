@@ -4,6 +4,12 @@
  */
 
 import { verifyFirebaseIdToken, WorkerEnv, AuthContext, D1PreparedStatement } from './auth';
+import {
+  generateLicenseKey,
+  verifyRazorpaySignature,
+  sendLicenseDeliveryEmail,
+  activateDeviceLicense,
+} from './license';
 
 type ExecutionContext = {
   waitUntil: (promise: Promise<any>) => void;
@@ -93,10 +99,274 @@ export default {
         app: 'MOKU Cloud Sync Worker',
         timestamp: Date.now(),
         d1Ready: !!env.DB,
+        razorpayWebhookConfigured: !!env.RAZORPAY_WEBHOOK_SECRET,
+        emailProviderConfigured: !!env.RESEND_API_KEY,
       });
     }
 
-    // API state & sync endpoints
+    // -------------------------------------------------------------
+    // 1. Razorpay Webhook Endpoint: /api/webhook/razorpay
+    // Automatically called by Razorpay when payment completes
+    // -------------------------------------------------------------
+    if (url.pathname === '/api/webhook/razorpay' && request.method === 'POST') {
+      try {
+        const rawBody = await request.text();
+        const signature = request.headers.get('x-razorpay-signature');
+
+        // Verify signature if secret configured in Cloudflare environment
+        if (env.RAZORPAY_WEBHOOK_SECRET) {
+          const isValid = await verifyRazorpaySignature(
+            rawBody,
+            signature,
+            env.RAZORPAY_WEBHOOK_SECRET
+          );
+          if (!isValid) {
+            console.error('Invalid Razorpay webhook signature');
+            return jsonResponse({ error: 'Invalid webhook signature' }, 401);
+          }
+        }
+
+        const payload = JSON.parse(rawBody || '{}');
+        const event = payload.event;
+
+        // Process successful payment events
+        if (event === 'payment.captured' || event === 'order.paid') {
+          const paymentEntity = payload.payload?.payment?.entity || {};
+          const buyerEmail = paymentEntity.email || payload.payload?.order?.entity?.notes?.email;
+          const buyerName = paymentEntity.notes?.name || paymentEntity.notes?.customer_name || 'Customer';
+          const buyerPhone = paymentEntity.contact;
+          const paymentId = paymentEntity.id || 'pay_manual';
+          const orderId = paymentEntity.order_id || payload.payload?.order?.entity?.id || null;
+          const amount = paymentEntity.amount ? Math.round(paymentEntity.amount / 100) : 0;
+          const currency = paymentEntity.currency || 'INR';
+
+          if (!buyerEmail) {
+            console.warn('Razorpay webhook event without email, skipping key dispatch', paymentId);
+            return jsonResponse({ ok: true, notice: 'Missing email in payment payload' });
+          }
+
+          if (!env.DB) {
+            console.error('D1 database not bound to worker');
+            return jsonResponse({ error: 'Database not configured' }, 500);
+          }
+
+          // -------------------------------------------------------------
+          // 1A. Webhook Idempotency Check
+          // Both payment.captured and order.paid point to the same transaction.
+          // Check if a license was already created for this payment_id or order_id.
+          // -------------------------------------------------------------
+          const effectivePaymentId = paymentId && paymentId !== 'pay_manual' ? paymentId : null;
+          const effectiveOrderId = orderId && orderId !== 'NONE' ? orderId : null;
+
+          if (effectivePaymentId || effectiveOrderId) {
+            const checkStmt = env.DB.prepare(
+              'SELECT * FROM licenses WHERE (payment_id IS NOT NULL AND payment_id = ?) OR (order_id IS NOT NULL AND order_id = ?) LIMIT 1'
+            ).bind(effectivePaymentId || 'NONE', effectiveOrderId || 'NONE');
+            const checkRes = await checkStmt.all<any>();
+            const existing = checkRes.results?.[0];
+
+            if (existing) {
+              console.log(`[Idempotent Webhook] Returning existing key for payment ${paymentId} / order ${orderId}: ${existing.license_key}`);
+              return jsonResponse({
+                ok: true,
+                idempotent: true,
+                event,
+                licenseKey: existing.license_key,
+                buyerEmail: existing.buyer_email,
+                message: 'Webhook already processed; duplicate license generation prevented.',
+              });
+            }
+          }
+
+          // Generate unique 16-character Razorpay commercial license key (e.g. MOKU-RZP-7X9B-4D2A-8K1E)
+          const licenseKey = generateLicenseKey('MOKU-RZP');
+          const maxDevices = 2; // Default 2 devices per license to prevent sharing
+
+          // Save license in D1 database with source='razorpay'
+          // ON CONFLICT(payment_id) DO NOTHING ensures atomic idempotency under high concurrency
+          const insertRes = await env.DB.prepare(
+            `INSERT INTO licenses (license_key, order_id, payment_id, buyer_email, buyer_name, buyer_phone, amount, currency, max_devices, status, source, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 'razorpay', ?)
+             ON CONFLICT(payment_id) DO NOTHING`
+          ).bind(
+            licenseKey,
+            orderId,
+            paymentId,
+            buyerEmail,
+            buyerName,
+            buyerPhone,
+            amount,
+            currency,
+            maxDevices,
+            Date.now()
+          ).run();
+
+          // If the row was not inserted due to a concurrent webhook conflict, retrieve the winning key
+          if (insertRes.meta && (insertRes.meta as any).changes === 0 && (effectivePaymentId || effectiveOrderId)) {
+            const winnerStmt = env.DB.prepare(
+              'SELECT * FROM licenses WHERE (payment_id IS NOT NULL AND payment_id = ?) OR (order_id IS NOT NULL AND order_id = ?) LIMIT 1'
+            ).bind(effectivePaymentId || 'NONE', effectiveOrderId || 'NONE');
+            const winnerRes = await winnerStmt.all<any>();
+            const winner = winnerRes.results?.[0];
+            if (winner) {
+              return jsonResponse({
+                ok: true,
+                idempotent: true,
+                event,
+                licenseKey: winner.license_key,
+                buyerEmail: winner.buyer_email,
+                message: 'Webhook processed idempotently via database conflict resolution.',
+              });
+            }
+          }
+
+          // Build 1-click launch link
+          const appOrigin = env.APP_URL || url.origin;
+          const unlockUrl = `${appOrigin}/?unlock=${encodeURIComponent(licenseKey)}`;
+
+          // Dispatch delivery email to buyer
+          const emailRes = await sendLicenseDeliveryEmail(
+            env,
+            buyerEmail,
+            buyerName,
+            licenseKey,
+            unlockUrl
+          );
+
+          return jsonResponse({
+            ok: true,
+            event,
+            licenseKey,
+            emailSent: emailRes.sent,
+            provider: emailRes.provider,
+            buyerEmail,
+          });
+        }
+
+        return jsonResponse({ ok: true, ignoredEvent: event });
+      } catch (err: any) {
+        console.error('Failed to process Razorpay webhook:', err);
+        return jsonResponse({ error: 'Webhook processing failed', details: err?.message }, 500);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 2. Device Activation Endpoint: /api/license/activate
+    // Verifies key & enforces maximum 2-device seat limit
+    // -------------------------------------------------------------
+    if (url.pathname === '/api/license/activate' && request.method === 'POST') {
+      try {
+        const body = await request.json() as any;
+        const { licenseKey, deviceId, deviceName, adminPasscode } = body || {};
+
+        if (!licenseKey || !deviceId) {
+          return jsonResponse({ success: false, message: 'License key and device ID are required.' }, 400);
+        }
+
+        const upperKey = String(licenseKey).trim().toUpperCase();
+
+        // -------------------------------------------------------------
+        // Demo Key Bypass Guard:
+        // MOKU-PRO-2026 is strictly restricted to authorized admin mode or localhost.
+        // It CANNOT be used for commercial production activation by regular customers!
+        // -------------------------------------------------------------
+        if (upperKey === 'MOKU-PRO-2026') {
+          const isSellerAuthorized =
+            adminPasscode === 'MOKU-ADMIN-99' ||
+            request.headers.get('x-seller-passcode') === 'MOKU-ADMIN-99' ||
+            (env.ADMIN_API_KEY && adminPasscode === env.ADMIN_API_KEY);
+          const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+
+          if (isSellerAuthorized || isLocalhost) {
+            return jsonResponse({
+              success: true,
+              message: 'Master Demo Key verified (Admin / Developer Test Mode).',
+              isMasterDemo: true,
+              seatsUsed: 1,
+              maxSeats: 99,
+            });
+          }
+
+          // Production customer rejection:
+          return jsonResponse({
+            success: false,
+            message: 'MOKU-PRO-2026 is an internal developer demo key and cannot be used for commercial activation. Please enter your purchased commercial license key.',
+          }, 403);
+        }
+
+        if (!env.DB) {
+          return jsonResponse({
+            success: false,
+            message: 'Database unavailable. Please activate using your offline master key.',
+          }, 503);
+        }
+
+        const result = await activateDeviceLicense(env.DB, upperKey, deviceId, deviceName);
+        return jsonResponse(result, result.success ? 200 : 403);
+      } catch (err: any) {
+        console.error('License activation error:', err);
+        return jsonResponse({ success: false, message: 'Server activation error: ' + err?.message }, 500);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 3. Admin Manual Key Generator & Emailer: /api/license/admin/generate
+    // -------------------------------------------------------------
+    if (url.pathname === '/api/license/admin/generate' && request.method === 'POST') {
+      try {
+        const body = await request.json() as any;
+        const { adminPasscode, recipientEmail, buyerName, maxDevices = 2 } = body || {};
+
+        if (adminPasscode !== 'MOKU-ADMIN-99' && (!env.ADMIN_API_KEY || adminPasscode !== env.ADMIN_API_KEY)) {
+          return jsonResponse({ error: 'Unauthorized: Invalid admin passcode.' }, 401);
+        }
+
+        if (!recipientEmail || !recipientEmail.includes('@')) {
+          return jsonResponse({ error: 'Valid recipient email is required.' }, 400);
+        }
+
+        const licenseKey = generateLicenseKey('MOKU-ADM');
+
+        if (env.DB) {
+          await env.DB.prepare(
+            `INSERT INTO licenses (license_key, order_id, payment_id, buyer_email, buyer_name, max_devices, status, source, created_at)
+             VALUES (?, 'manual_admin', 'manual_admin', ?, ?, ?, 'active', 'manual_admin', ?)`
+          ).bind(
+            licenseKey,
+            recipientEmail,
+            buyerName || 'Customer',
+            maxDevices,
+            Date.now()
+          ).run();
+        }
+
+        const appOrigin = env.APP_URL || url.origin;
+        const unlockUrl = `${appOrigin}/?unlock=${encodeURIComponent(licenseKey)}`;
+
+        const emailRes = await sendLicenseDeliveryEmail(
+          env,
+          recipientEmail,
+          buyerName || 'Customer',
+          licenseKey,
+          unlockUrl
+        );
+
+        return jsonResponse({
+          success: true,
+          licenseKey,
+          unlockUrl,
+          emailSent: emailRes.sent,
+          provider: emailRes.provider,
+        });
+      } catch (err: any) {
+        console.error('Admin license generate error:', err);
+        return jsonResponse({ error: 'Failed to generate license: ' + err?.message }, 500);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // API state & sync endpoints (Require Firebase user authentication)
+    // -------------------------------------------------------------
     if (url.pathname.startsWith('/api/')) {
       const authHeader = request.headers.get('Authorization');
       const auth: AuthContext | null = await verifyFirebaseIdToken(

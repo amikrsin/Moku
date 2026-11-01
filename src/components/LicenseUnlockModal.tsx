@@ -13,11 +13,13 @@ import {
   ShoppingBag,
   Settings2,
   Eye,
-  EyeOff
+  EyeOff,
+  Download
 } from 'lucide-react';
 import { 
   getLicenseState, 
   verifyAndActivateKey, 
+  verifyAndActivateKeyAsync,
   saveLicenseState, 
   switchToDemoMode, 
   hideSellerAdminMode,
@@ -42,6 +44,7 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
   );
   const [inputKey, setInputKey] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isActivating, setIsActivating] = useState(false);
 
   // Seller config state
   const [sellerKey, setSellerKey] = useState(license.customLicenseKey || 'MOKU-PRO-2026');
@@ -74,17 +77,23 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
   const demoUrl = `${baseUrl}?demo=true`;
   const unlockUrl = `${baseUrl}?unlock=${encodeURIComponent(sellerKey.trim().toUpperCase())}`;
 
-  const handleActivate = (e: React.FormEvent) => {
+  const handleActivate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = verifyAndActivateKey(inputKey);
-    if (res.success) {
-      setFeedback({ type: 'success', text: res.message });
-      setInputKey('');
-      if (res.isSellerUnlocked) {
-        setActiveTab('seller');
+    setIsActivating(true);
+    setFeedback(null);
+    try {
+      const res = await verifyAndActivateKeyAsync(inputKey);
+      if (res.success) {
+        setFeedback({ type: 'success', text: res.message });
+        setInputKey('');
+        if (res.isSellerUnlocked) {
+          setActiveTab('seller');
+        }
+      } else {
+        setFeedback({ type: 'error', text: res.message });
       }
-    } else {
-      setFeedback({ type: 'error', text: res.message });
+    } finally {
+      setIsActivating(false);
     }
   };
 
@@ -273,10 +282,11 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
                     <button
                       id="activate-license-btn"
                       type="submit"
-                      className="px-4 py-2.5 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer shrink-0 flex items-center space-x-1.5"
+                      disabled={isActivating || !inputKey.trim()}
+                      className="px-4 py-2.5 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer shrink-0 flex items-center space-x-1.5"
                     >
                       <Unlock className="w-3.5 h-3.5" />
-                      <span>Unlock</span>
+                      <span>{isActivating ? 'Verifying...' : 'Unlock'}</span>
                     </button>
                   </div>
                 </div>
@@ -492,17 +502,54 @@ export const LicenseUnlockModal: React.FC<LicenseUnlockModalProps> = ({
                   {unlockUrl}
                 </div>
               </div>
+
+              {/* Razorpay Webhook URL for Automated Email & Key Dispatch */}
+              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-sm">⚡</span>
+                    <span className="text-xs font-bold text-blue-900 dark:text-blue-200">
+                      Razorpay Automated Webhook
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(`${baseUrl}/api/webhook/razorpay`, 'demo')}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
+                  >
+                    Copy Webhook URL
+                  </button>
+                </div>
+                <div className="p-1.5 rounded bg-white dark:bg-blue-950/70 border border-blue-200 dark:border-blue-900/40 text-[10px] font-mono text-blue-950 dark:text-blue-300 break-all">
+                  {baseUrl}/api/webhook/razorpay
+                </div>
+                <div className="text-[10px] text-blue-900/80 dark:text-blue-300/80 leading-relaxed space-y-0.5">
+                  <div>• <strong>Events:</strong> Check <code>payment.captured</code> and <code>order.paid</code> in Razorpay Dashboard.</div>
+                  <div>• <strong>Action:</strong> Generates unique key, limits to 2 devices, and emails buyer their 1-click unlock link automatically.</div>
+                </div>
+              </div>
             </div>
 
-            {/* Download Buyer Delivery Template */}
-            <button
-              type="button"
-              onClick={handleDownloadReceiptTemplate}
-              className="w-full py-2.5 px-4 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold flex items-center justify-center space-x-2 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
-            >
-              <FileText className="w-4 h-4" />
-              <span>Download Buyer Delivery Card (.HTML)</span>
-            </button>
+            {/* Download Buttons: Audit Package & Delivery Card */}
+            <div className="pt-1 flex flex-col sm:flex-row gap-2">
+              <a
+                href="/moku-audit-files.zip"
+                download="moku-audit-files.zip"
+                className="flex-1 py-2.5 px-3 rounded-xl bg-[var(--moku-surface-secondary)] border border-[var(--moku-outline)] hover:border-[var(--moku-primary)] text-[var(--moku-text-primary)] text-xs font-bold flex items-center justify-center space-x-1.5 transition-colors cursor-pointer shadow-xs text-center"
+              >
+                <Download className="w-3.5 h-3.5 text-[var(--moku-primary)]" />
+                <span>Audit Package (.ZIP)</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={handleDownloadReceiptTemplate}
+                className="flex-1 py-2.5 px-3 rounded-xl bg-[var(--moku-primary)] text-white text-xs font-bold flex items-center justify-center space-x-1.5 hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Delivery Card (.HTML)</span>
+              </button>
+            </div>
           </div>
         )}
       </div>

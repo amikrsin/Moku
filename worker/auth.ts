@@ -32,6 +32,13 @@ export interface WorkerEnv {
   DB?: D1Database;
   FIREBASE_PROJECT_ID?: string;
   NODE_VERSION?: string;
+  RAZORPAY_KEY_ID?: string;
+  RAZORPAY_KEY_SECRET?: string;
+  RAZORPAY_WEBHOOK_SECRET?: string;
+  RESEND_API_KEY?: string;
+  APP_URL?: string;
+  SUPPORT_EMAIL?: string;
+  ADMIN_API_KEY?: string;
 }
 
 const FIREBASE_JWKS_URL =

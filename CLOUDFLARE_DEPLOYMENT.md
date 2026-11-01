@@ -99,14 +99,30 @@ npx wrangler d1 execute moku_db --remote --file=./worker/schema.sql
 In Cloudflare Dashboard (**Workers & Pages** > **moku** > **Settings** > **Variables & Secrets**), set:
 
 - `FIREBASE_PROJECT_ID`: Your Firebase project ID (e.g. `kakeibo-ledger`)
+- `RAZORPAY_WEBHOOK_SECRET`: The secret key you enter in your Razorpay Dashboard webhooks.
+- `RESEND_API_KEY`: (Optional) Free API key from Resend.com to send delivery emails with your custom sender domain.
+- `APP_URL`: Your production domain (e.g. `https://moku.pages.dev`).
+- `SUPPORT_EMAIL`: Support or sender email address (e.g. `support@yourdomain.com`).
 
-And in your build settings, configure the client environment variables:
-- `VITE_FIREBASE_API_KEY`
-- `VITE_FIREBASE_AUTH_DOMAIN`
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_STORAGE_BUCKET`
-- `VITE_FIREBASE_MESSAGING_SENDER_ID`
-- `VITE_FIREBASE_APP_ID`
+---
+
+## 💳 Razorpay Automated Webhook Setup
+
+To have Razorpay automatically generate license keys and email customers upon payment:
+
+1. Log into your **[Razorpay Dashboard](https://dashboard.razorpay.com/)**.
+2. Go to **Account & Settings** > **Webhooks** (under *API Keys & Webhooks*).
+3. Click **Add New Webhook**:
+   - **Webhook URL**: `https://<YOUR_DOMAIN>.pages.dev/api/webhook/razorpay`
+   - **Secret**: Enter any secure string (e.g. `moku_sec_99182`) and add this same string as `RAZORPAY_WEBHOOK_SECRET` in Cloudflare Secrets.
+   - **Active Events**: Check `payment.captured` and `order.paid`.
+4. Click **Save Webhook**.
+
+Now, whenever a customer pays via UPI, QR code, Card, or NetBanking:
+1. Razorpay notifies your Cloudflare Worker.
+2. The worker generates a unique key (e.g. `MOKU-8K2R-9X4M-3B7V`) and saves it to Cloudflare D1 with a **2-device limit**.
+3. An automated email is dispatched to the buyer with their **1-Click Launch Link** (`https://<YOUR_DOMAIN>/?unlock=MOKU-...`).
+4. Opening the link activates the device seat and prompts the user to **Install App**.
 
 ---
 
